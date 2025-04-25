@@ -6,3 +6,5 @@ node_modules
 package-lock.json
 .DS_Store
 iac/terraform.tfvars
+iac/artifacts
+iac/.terraform/providers/registry.terraform.io/hashicorp/aws
