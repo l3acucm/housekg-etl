@@ -1,0 +1,21 @@
+parameters: {}
+environment: {}
+packages:
+    - name: ingestor
+      shared: false
+      environment: {}
+      parameters: {}
+      annotations: {}
+      functions:
+        - name: apartments
+          binary: false
+          main: ""
+          runtime: python:default
+          web: true
+          webSecure: false
+          parameters: {}
+          environment: {}
+          annotations: {}
+          limits:
+            timeout: 300000
+            memory: 1024
