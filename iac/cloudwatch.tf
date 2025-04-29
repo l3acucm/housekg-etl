@@ -1,26 +1,26 @@
 resource "aws_cloudwatch_event_rule" "s3_upload_trigger" {
   name        = "s3-file-upload-trigger"
-  description = "Trigger Glue job when a new file is uploaded to the S3 bucket"
+  description = "Trigger on new object upload"
   event_pattern = jsonencode({
-    source = ["aws.s3"]
-    detail-type = ["AWS API Call via CloudTrail"]
-    detail = {
-      eventSource = ["s3.amazonaws.com"]
+    "source": ["aws.s3"],
+    "detail-type": ["Object Created"],
+    "detail": {
+      "bucket": {
+        "name": [aws_s3_bucket.data_bucket.bucket]
+      },
       eventName = ["PutObject"]
-      requestParameters = {
-        bucketName = [aws_s3_bucket.data_bucket.bucket]
+      "object": {
+        "key": [{
+          "prefix": "ingestions/prefix/"   # <== your filter here
+        }]
       }
     }
   })
 }
 
-resource "aws_cloudwatch_event_target" "trigger_bronze_job" {
+resource "aws_cloudwatch_event_target" "trigger_lambda" {
   rule = aws_cloudwatch_event_rule.s3_upload_trigger.name
-  arn  = "arn:aws:glue:us-east-1:975050012362:job/bronze_etl_job"
-
-  input = jsonencode({
-    "JobName" = aws_glue_job.glue_bronze_job.name
-  })
+  arn  = aws_lambda_function.start_glue_bronze.arn
 }
 
 

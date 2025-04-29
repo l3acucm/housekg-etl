@@ -4,12 +4,12 @@
 resource "aws_lambda_function" "ingestion_lambda" {
 
   function_name = "ingestion_lambda"
-  filename      = "artifacts/lambda.zip"
+  filename      = "artifacts/ingestion_lambda.zip"
   handler       = "main.handler"
   memory_size   = 512
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec_role.arn
-  source_code_hash = filebase64sha256("artifacts/lambda.zip")
+  source_code_hash = filebase64sha256("artifacts/ingestion_lambda.zip")
   layers        = [aws_lambda_layer_version.requests_layer.arn]
   timeout       = 30
 }
@@ -17,6 +17,7 @@ resource "aws_lambda_function" "ingestion_lambda" {
 resource "aws_lambda_layer_version" "requests_layer" {
   filename   = "artifacts/requests_layer.zip"
   layer_name = "requests"
+  source_code_hash = filebase64sha256("artifacts/requests_layer.zip")
   compatible_runtimes = ["python3.10"]
 }
 
@@ -50,4 +51,28 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_invoke_lambda" {
   function_name = aws_lambda_function.ingestion_lambda.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.lambda_cron_rule.arn
+}
+
+resource "aws_lambda_function" "start_glue_bronze" {
+  function_name = "start_glue_bronze_job"
+  role          = aws_iam_role.lambda_exec_role.arn
+  handler       = "main.handler"
+  runtime       = "python3.12"
+  filename      = "artifacts/bronze_lambda.zip"
+  source_code_hash = filebase64sha256("artifacts/bronze_lambda.zip")
+  timeout       = 30
+
+
+  environment {
+    variables = {
+      JOB_NAME = aws_glue_job.bronze.name
+    }
+  }
+}
+resource "aws_lambda_permission" "allow_eventbridge" {
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.start_glue_bronze.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.s3_upload_trigger.arn
 }

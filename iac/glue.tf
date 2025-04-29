@@ -4,33 +4,37 @@
 resource "aws_glue_catalog_database" "data_db" {
   name = "realty_data"
 }
+resource "aws_glue_job" "bronze" {
+  name        = "Bronze ETL job"
+  role_arn    = aws_iam_role.glue_service_role.arn
+  glue_version = "5.0" # Specify Glue version 5.0
+  worker_type = "G.1X" # Example worker type
+  number_of_workers = 2 # Number of workers
+  timeout = 60 # Timeout in minutes
+  max_retries = 1
 
-resource "aws_glue_job" "glue_bronze_job" {
-  name     = "bronze_etl_job"
-  role_arn     = aws_iam_role.glue_service_role.arn
   command {
-    name            = "bronze"
-    script_location = "s3://${aws_s3_bucket.data_bucket.bucket}/notebooks/bronze.ipynb"  # Glue script that calls notebooks
+    name = "glueetl" # For Spark ETL jobs
+    script_location = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.bronze_script.key}"
+    python_version  = "3" # Python version supported in Glue 5.0
   }
-  max_capacity = 10
 
-  # Optionally, use a Glue Spark context for your job
   default_arguments = {
-    "--TempDir" = "s3://${aws_s3_bucket.data_bucket.bucket}/glue_temp_dir/"
+    "--job-language"          = "python"
+    "--enable-metrics" = "true" # Enable metrics for job profiling
+    "--enable-continuous-cloudwatch-log" = "true" # Enable continuous logging
+    "--enable-spark-ui" = "true" # Enable Spark UI
+    "--spark-event-logs-path" = "s3://${aws_s3_bucket.data_bucket.id}/spark-logs/"
+    "--conf"                  = "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension"
+    "--conf"                  = "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
+    #"--requirements"                    = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.requirements_txt.key}" # Path to requirements.txt
   }
-}
 
-resource "aws_glue_job" "glue_silver_job" {
-  name     = "silver_etl_job"
-  role_arn     = aws_iam_role.glue_service_role.arn
-  command {
-    name            = "silver"
-    script_location = "s3://${aws_s3_bucket.data_bucket.bucket}/notebooks/silver.ipynb"  # Glue script that calls notebooks
+  execution_property {
+    max_concurrent_runs = 1 # Maximum concurrent runs
   }
-  max_capacity = 10
 
-  # Optionally, use a Glue Spark context for your job
-  default_arguments = {
-    "--TempDir" = "s3://${aws_s3_bucket.data_bucket.bucket}/glue_temp_dir/"
+  tags = {
+    Name = "Glue Job"
   }
 }

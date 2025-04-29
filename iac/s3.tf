@@ -6,16 +6,9 @@ resource "aws_s3_bucket" "data_bucket" {
   force_destroy = true
 }
 
-resource "aws_s3_object" "bronze_notebook" {
+resource "aws_s3_object" "bronze_script" {
   bucket = aws_s3_bucket.data_bucket.bucket
-  key    = "notebooks/bronze.ipynb"
-  source = "../notebooks/bronze.ipynb"
-  etag = filemd5("../notebooks/bronze.ipynb")
-}
-
-resource "aws_s3_object" "silver_notebook" {
-  bucket = aws_s3_bucket.data_bucket.bucket
-  key    = "notebooks/silver.ipynb"
-  source = "../notebooks/silver.ipynb"
-  etag = filemd5("../notebooks/silver.ipynb")
+  key    = "etl/bronze.py"
+  source = "../etl/bronze.py"
+  etag = filemd5("../etl/bronze.py")
 }
