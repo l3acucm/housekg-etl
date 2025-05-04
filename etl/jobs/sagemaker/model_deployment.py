@@ -6,14 +6,15 @@ from datetime import datetime
 
 # Initialize SageMaker client
 region = os.environ['AWS_REGION']
+bucket_name = os.environ['BUCKET']
 model_name_prefix = os.environ['MODEL_NAME_PREFIX']
+timestamp_str = datetime.now().strftime("%Y%m%d")
+model_name = f"{model_name_prefix}-{timestamp_str}"
 sagemaker_client = boto3.client('sagemaker', region_name=region)
 
 def deploy_model(model_s3_uri, role_arn):
-    timestamp = datetime.now().strftime("%Y%m%d")
-    model_name = f"{model_name_prefix}-{timestamp}"
-    endpoint_config_name = f"housekg-endpoint-config-{timestamp}"
-    endpoint_name = f"housekg-endpoint-{timestamp}"
+    endpoint_config_name = f"housekg-endpoint-config-{timestamp_str}"
+    endpoint_name = f"housekg-endpoint-{timestamp_str}"
 
     # Create SageMaker model
     sagemaker_client.create_model(
@@ -51,7 +52,8 @@ def deploy_model(model_s3_uri, role_arn):
     return endpoint_name
 
 if __name__ == "__main__":
-    model_s3_uri = "s3://housekg-etl-bucket/model_output/housekg-model.tar.gz" # Update with your model path
+    model_key = f"models/{model_name_prefix}-{timestamp_str}.pth"
+    model_s3_uri = f"s3://{bucket_name}/{model_key}.tar.gz" # Update with your model path
     role_arn = "arn:aws:iam::ACCOUNT_ID:role/SageMakerExecutionRole" # Update with your SageMaker role ARN
     endpoint = deploy_model(model_s3_uri, role_arn)
     print(f"Model deployed at endpoint: {endpoint}")

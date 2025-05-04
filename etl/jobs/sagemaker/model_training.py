@@ -18,11 +18,11 @@ import boto3
 model_name_prefix = os.environ['MODEL_NAME']
 role_arn = os.environ['ROLE_ARN']
 region = os.environ['AWS_REGION']
+bucket_name = os.environ['BUCKET']
 xgboost_version = os.environ.get('XGBOOST_VERSION', '1.3-1')
 
-bucket_name = "housekg-etl-bucket"
 timestamp_str = datetime.now().strftime("%d.%m.%Y")
-model_key = f"models/{model_name_prefix}{timestamp_str}.pth"
+model_key = f"models/{model_name_prefix}-{timestamp_str}.pth"
 
 
 # Create a custom dataset
@@ -58,15 +58,14 @@ class PricePredictor(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-bucket = "housekg-etl-bucket"
 bronze_key = f"bronze/"
 silver_key = f"silver/"
 timestamp_str = "29042025"
-price_fact_table_path = f"s3a://{bucket}/{silver_key}/realty_price_fact_{timestamp_str}"
-realty_dim_table_path = f"s3a://{bucket}/{silver_key}/realty_dim_{timestamp_str}"
+price_fact_table_path = f"s3a://{bucket_name}/{silver_key}/realty_price_fact_{timestamp_str}"
+realty_dim_table_path = f"s3a://{bucket_name}/{silver_key}/realty_dim_{timestamp_str}"
 price_fact_df = spark.read.format("parquet").load(price_fact_table_path)
 realty_dim_df = spark.read.format("parquet").load(realty_dim_table_path)
-prediction_fact_table_path = f"s3a://{bucket}/{silver_key}/prediction_fact_{timestamp_str}"
+prediction_fact_table_path = f"s3a://{bucket_name}/{silver_key}/prediction_fact_{timestamp_str}"
 
 # Prepare training df
 training_df = realty_dim_df.join(
@@ -160,11 +159,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs=10
 
         epoch_val_loss = val_loss / len(val_loader)
         val_losses.append(epoch_val_loss)
-
         # Print progress every 10 epochs
         if (epoch + 1) % 10 == 0:
             print(f'Epoch {epoch + 1}/{epochs}, Train Loss: {epoch_train_loss:.4f}, Val Loss: {epoch_val_loss:.4f}')
-
     return train_losses, val_losses
 
 
