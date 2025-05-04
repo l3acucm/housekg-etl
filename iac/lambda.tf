@@ -52,27 +52,3 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_invoke_lambda" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.lambda_cron_rule.arn
 }
-
-resource "aws_lambda_function" "start_glue_bronze" {
-  function_name = "start_glue_bronze_job"
-  role          = aws_iam_role.lambda_exec_role.arn
-  handler       = "main.handler"
-  runtime       = "python3.12"
-  filename      = "artifacts/bronze_lambda.zip"
-  source_code_hash = filebase64sha256("artifacts/bronze_lambda.zip")
-  timeout       = 30
-
-
-  environment {
-    variables = {
-      JOB_NAME = aws_glue_job.bronze.name
-    }
-  }
-}
-resource "aws_lambda_permission" "allow_eventbridge" {
-  statement_id  = "AllowExecutionFromEventBridge"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.start_glue_bronze.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.s3_upload_trigger.arn
-}

@@ -1,40 +1,75 @@
-#######################
-# Glue Catalog Database
-#######################
 resource "aws_glue_catalog_database" "data_db" {
   name = "realty_data"
 }
-resource "aws_glue_job" "bronze" {
-  name        = "Bronze ETL job"
-  role_arn    = aws_iam_role.glue_service_role.arn
-  glue_version = "5.0" # Specify Glue version 5.0
-  worker_type = "G.1X" # Example worker type
-  number_of_workers = 2 # Number of workers
-  timeout = 60 # Timeout in minutes
-  max_retries = 1
+resource "aws_glue_crawler" "housekg_crawler" {
+  name          = "housekg-crawler"
+  database_name = aws_glue_catalog_database.data_db.name
+  role          = aws_iam_role.glue_service_role.arn
+  description   = "Crawls JSON data from S3 for housekg ETL"
+  classifiers = [aws_glue_classifier.housekg_json_classifier.name]
 
-  command {
-    name = "glueetl" # For Spark ETL jobs
-    script_location = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.bronze_script.key}"
-    python_version  = "3" # Python version supported in Glue 5.0
+  s3_target {
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/ingestions/"
   }
 
+  configuration = jsonencode({
+    Version = 1.0
+    CrawlerOutput = {
+      Partitions = { AddOrUpdateBehavior = "InheritFromTable" }
+    }
+    Grouping = {
+      TableGroupingPolicy = "CombineCompatibleSchemas"
+    }
+  })
+
+  schema_change_policy {
+    update_behavior = "UPDATE_IN_DATABASE"
+    delete_behavior = "DEPRECATE_IN_DATABASE"
+  }
+
+
+  tags = {
+    Project = "HouseKG"
+  }
+}
+resource "aws_glue_classifier" "housekg_json_classifier" {
+  name = "housekg_json_classifier"
+
+  json_classifier {
+    json_path = "$[*]"
+  }
+}
+resource "aws_glue_job" "feature_engineering" {
+  name              = "house_feature_engineering"
+  role_arn          = aws_iam_role.glue_service_role.arn
+  glue_version      = "5.0"
+  worker_type       = "G.1X"
+  number_of_workers = 2
+  timeout           = 60
+  max_retries       = 0
+
+  command {
+    name = "glueetl" # Use "glueetl" for Spark ETL jobs
+    script_location = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.feature_engineering_script.key}"
+    python_version  = "3" # Glue 5.0 supports Python 3.11
+  }
+
+
   default_arguments = {
-    "--job-language"          = "python"
+    "--BUCKET"     = aws_s3_bucket.data_bucket.bucket
+    "--BRONZE_KEY" = "bronze/"
+    "--SILVER_KEY" = "silver/"
+    "--job-language"              = "python"
     "--enable-metrics" = "true" # Enable metrics for job profiling
     "--enable-continuous-cloudwatch-log" = "true" # Enable continuous logging
-    "--enable-spark-ui" = "true" # Enable Spark UI
-    "--spark-event-logs-path" = "s3://${aws_s3_bucket.data_bucket.id}/spark-logs/"
-    "--conf"                  = "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension"
-    "--conf"                  = "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
-    #"--requirements"                    = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.requirements_txt.key}" # Path to requirements.txt
+    "--spark-event-logs-path"     = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/feature-engineering/spark-logs/"
+    "--conf"                      = "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension"
+    "--conf"                      = "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
+    "--additional-python-modules" = "delta-spark==3.2.0"
   }
 
   execution_property {
     max_concurrent_runs = 1 # Maximum concurrent runs
   }
 
-  tags = {
-    Name = "Glue Job"
-  }
 }
