@@ -2,16 +2,22 @@
 # AWS Lambda
 #######################
 resource "aws_lambda_function" "ingestion_lambda" {
-
   function_name = "ingestion_lambda"
   filename      = "artifacts/ingestion_lambda.zip"
   handler       = "main.handler"
   memory_size   = 512
   runtime       = "python3.10"
-  role          = aws_iam_role.lambda_exec_role.arn
+  role          = aws_iam_role.lambda_role.arn
   source_code_hash = filebase64sha256("artifacts/ingestion_lambda.zip")
   layers        = [aws_lambda_layer_version.requests_layer.arn]
   timeout       = 30
+  environment {
+    variables = {
+      BUCKET_NAME = var.s3_bucket
+      FILE_NAME_PREFIX = "apartments"
+      CRAWLER_NAME = var.crawler_name
+    }
+  }
 }
 
 resource "aws_lambda_layer_version" "requests_layer" {
@@ -52,3 +58,4 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_invoke_lambda" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.lambda_cron_rule.arn
 }
+

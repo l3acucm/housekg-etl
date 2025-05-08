@@ -1,11 +1,11 @@
 resource "aws_glue_catalog_database" "data_db" {
   name = "realty_data"
 }
+
 resource "aws_glue_crawler" "housekg_crawler" {
-  name          = "housekg-crawler"
+  name          = var.crawler_name
+  role          = aws_iam_role.glue_crawler_role.arn
   database_name = aws_glue_catalog_database.data_db.name
-  role          = aws_iam_role.glue_service_role.arn
-  description   = "Crawls JSON data from S3 for housekg ETL"
   classifiers = [aws_glue_classifier.housekg_json_classifier.name]
 
   s3_target {
@@ -15,22 +15,9 @@ resource "aws_glue_crawler" "housekg_crawler" {
   configuration = jsonencode({
     Version = 1.0
     CrawlerOutput = {
-      Partitions = { AddOrUpdateBehavior = "InheritFromTable" }
-    }
-    Grouping = {
-      TableGroupingPolicy = "CombineCompatibleSchemas"
+      Tables = { AddOrUpdateBehavior = "MergeNewColumns" }
     }
   })
-
-  schema_change_policy {
-    update_behavior = "UPDATE_IN_DATABASE"
-    delete_behavior = "DEPRECATE_IN_DATABASE"
-  }
-
-
-  tags = {
-    Project = "HouseKG"
-  }
 }
 resource "aws_glue_classifier" "housekg_json_classifier" {
   name = "housekg_json_classifier"
@@ -41,7 +28,7 @@ resource "aws_glue_classifier" "housekg_json_classifier" {
 }
 resource "aws_glue_job" "feature_engineering" {
   name              = "house_feature_engineering"
-  role_arn          = aws_iam_role.glue_service_role.arn
+  role_arn          = aws_iam_role.glue_job_role.arn
   glue_version      = "5.0"
   worker_type       = "G.1X"
   number_of_workers = 2
@@ -56,16 +43,13 @@ resource "aws_glue_job" "feature_engineering" {
 
 
   default_arguments = {
-    "--BUCKET"     = aws_s3_bucket.data_bucket.bucket
-    "--BRONZE_KEY" = "bronze/"
-    "--SILVER_KEY" = "silver/"
+    "--BUCKET"                    = aws_s3_bucket.data_bucket.bucket
+    "--BRONZE_KEY"                = "bronze/"
+    "--SILVER_KEY"                = "silver/"
     "--job-language"              = "python"
     "--enable-metrics" = "true" # Enable metrics for job profiling
     "--enable-continuous-cloudwatch-log" = "true" # Enable continuous logging
     "--spark-event-logs-path"     = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/feature-engineering/spark-logs/"
-    "--conf"                      = "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension"
-    "--conf"                      = "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
-    "--additional-python-modules" = "delta-spark==3.2.0"
   }
 
   execution_property {

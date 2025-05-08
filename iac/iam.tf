@@ -1,8 +1,5 @@
-#######################
-# IAM
-#######################
-resource "aws_iam_role" "lambda_exec_role" {
-  name = "lambda_exec_role"
+resource "aws_iam_role" "lambda_role" {
+  name = "lambda_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -13,29 +10,44 @@ resource "aws_iam_role" "lambda_exec_role" {
         Principal = {
           Service = "lambda.amazonaws.com"
         }
-      }
+      },
     ]
   })
 }
 
-resource "aws_iam_policy" "lambda_s3_policy" {
-  name = "lambda-s3-access"
-
+resource "aws_iam_role_policy" "lambda_role_policy" {
+  role = aws_iam_role.lambda_role.name
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
         Action = ["s3:PutObject"],
         Effect   = "Allow",
-        Resource = "${aws_s3_bucket.data_bucket.arn}/*"
+        Resource = "${aws_s3_bucket.data_bucket.arn}/${var.ingestions_dir}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "glue:UpdateCrawler",
+          "glue:GetCrawler"
+        ]
+        Resource = aws_glue_crawler.housekg_crawler.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
       }
     ]
   })
 }
 
-# IAM Role for Glue Service
-resource "aws_iam_role" "glue_service_role" {
-  name = "glue_service_role"
+resource "aws_iam_role" "glue_crawler_role" {
+  name = "glue_crawler_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -46,34 +58,16 @@ resource "aws_iam_role" "glue_service_role" {
           Service = "glue.amazonaws.com"
         }
       }
+
     ]
   })
 }
-# IAM policy for Glue Crawler
-resource "aws_iam_policy" "glue_crawler_policy" {
-  name = "GlueCrawlerPolicy"
 
+resource "aws_iam_role_policy" "glue_crawler_policy" {
+  role = aws_iam_role.glue_crawler_role.name
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          aws_s3_bucket.data_bucket.arn,
-          "${aws_s3_bucket.data_bucket.arn}/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "glue:*"
-        ]
-        Resource = "*"
-      },
       {
         Effect = "Allow"
         Action = [
@@ -82,154 +76,217 @@ resource "aws_iam_policy" "glue_crawler_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject"
+        ]
+        Resource = "arn:aws:s3:::${aws_s3_bucket.data_bucket.bucket}/ingestions/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "glue:CreateTable",
+          "glue:GetDatabase",
+          "glue:UpdateDatabase",
+          "glue:CreatePartition",
+          "glue:GetTable"
+        ]
+        Resource = "*" # Use "*" for actions that don't support resource-level permissions
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.s3_bucket}",
+          "arn:aws:s3:::${var.s3_bucket}/*"
+        ]
       }
     ]
   })
 }
 
-# Attach policy to existing role
-resource "aws_iam_role_policy_attachment" "glue_crawler_policy_attachment" {
-  role       = aws_iam_role.glue_service_role.name
-  policy_arn = aws_iam_policy.glue_crawler_policy.arn
+resource "aws_iam_role" "glue_job_role" {
+  name = "glue_job_role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "glue.amazonaws.com"
+        }
+      },
+    ]
+  })
 }
 
-# Define IAM policy for SageMaker and related services
-resource "aws_iam_policy" "sagemaker_execution_policy" {
-  name        = "SageMakerExecutionPolicy"
-  description = "Policy for SageMaker model deployment and Glue job execution"
-
+resource "aws_iam_role_policy" "glue_job_policy" {
+  role = aws_iam_role.glue_job_role.name
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
         Effect = "Allow"
         Action = [
-          "sagemaker:CreateModel",
-          "sagemaker:CreateEndpointConfig",
-          "sagemaker:CreateEndpoint",
-          "sagemaker:DescribeEndpoint",
-          "sagemaker:DeleteModel",
-          "sagemaker:DeleteEndpointConfig",
-          "sagemaker:DeleteEndpoint"
+          "redshift:DescribeClusters",
+          "redshift:GetClusterCredentials",
+          "redshift-serverless:ListNamespaces",
+          "redshift-serverless:ListWorkgroups",
+          "redshift-serverless:GetCredentials",
+          "redshift-serverless:GetWorkgroup",
+          "redshift-serverless:GetNamespace"
         ]
         Resource = "*"
       },
       {
         Effect = "Allow"
         Action = [
+          "glue:GetConnection",
+          "glue:UseConnection"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeSubnets",
+          "ec2:DescribeVpcEndpoints",
+          "ec2:DescribeRouteTables",
+          "ec2:DescribeSecurityGroups",
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:CreateTags"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject"
+        ]
+        Resource = "${aws_s3_bucket.data_bucket.arn}/etl/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "redshift-data:ExecuteStatement",
+          "redshift-data:DescribeStatement",
+          "redshift-data:GetStatementResult",
+          "redshift-data:CancelStatement",
+          "redshift-data:ListStatements",
+          "redshift-data:BatchExecuteStatement"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "redshift:DescribeClusters",
+          "redshift:DescribeClusterSecurityGroups",
+          "redshift-data:ExecuteStatement",
+          "redshift-data:GetStatementResult"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:StartJobRun",
+          "glue:GetJobRun",
+          "glue:GetJob",
+          "glue:UpdateJob",
+          "glue:GetPartitions"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = [
+          "s3:GetObject",
+          "s3:PutObject"
+        ]
+        Resource = "arn:aws:s3:::your-bucket-name/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = [
+          "redshift-serverless:GetWorkgroup",
+          "redshift-serverless:GetNamespace"
+        ]
+        Resource = "*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
           "s3:GetObject",
           "s3:PutObject",
           "s3:DeleteObject",
           "s3:ListBucket"
+        ],
+        "Resource" : [
+          "arn:aws:s3:::housekg-etl",
+          "arn:aws:s3:::housekg-etl/*"
         ]
-        Resource = [
-          "arn:aws:s3:::your-model-bucket",
-          "arn:aws:s3:::your-model-bucket/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:GetAuthorizationToken"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "cloudwatch:PutMetricData",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "iam:PassRole"
-        ]
-        Resource = aws_iam_role.sagemaker_role.arn
-        Condition = {
-          StringEquals = {
-            "iam:PassedToService" = "sagemaker.amazonaws.com"
-          }
-        }
       }
     ]
   })
 }
 
-resource "aws_iam_role" "sagemaker_role" {
-  name = "SageMakerTrainingRole"
+resource "aws_iam_role" "redshift_role" {
+  name = "redshift-serverless-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Action    = "sts:AssumeRole"
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
         Principal = {
-          Service = "sagemaker.amazonaws.com"
+          Service = "redshift.amazonaws.com"
         }
-        Effect    = "Allow"
-        Sid       = ""
-      },
+      }
     ]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "sagemaker_policy_s3" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-  role       = aws_iam_role.sagemaker_role.name
-}
+resource "aws_iam_role_policy" "redshift_policy" {
+  name = "redshift-policy"
+  role = aws_iam_role.redshift_role.id
 
-resource "aws_iam_role_policy_attachment" "sagemaker_policy_sagemaker" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
-  role       = aws_iam_role.sagemaker_role.name
-}
-
-# Attach policy to role
-resource "aws_iam_role_policy_attachment" "sagemaker_execution_attachment" {
-  role       = aws_iam_role.sagemaker_role.name
-  policy_arn = aws_iam_policy.sagemaker_execution_policy.arn
-}
-
-# Output the role ARN
-output "sagemaker_role_arn" {
-  value = aws_iam_role.sagemaker_role.arn
-  description = "ARN of the SageMaker execution role"
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_s3_attach" {
-  role       = aws_iam_role.lambda_exec_role.name
-  policy_arn = aws_iam_policy.lambda_s3_policy.arn
-}
-
-
-resource "aws_iam_role_policy_attachment" "glue_s3_policy" {
-  role       = aws_iam_role.glue_service_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "glue_logs_policy" {
-  role       = aws_iam_role.glue_service_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
-}
-
-resource "aws_iam_role_policy_attachment" "glue_cloudwatch_logs" {
-  role       = aws_iam_role.glue_service_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
-}
-
-# Attach policies to the Glue service role
-resource "aws_iam_role_policy_attachment" "glue_role_policy" {
-  role       = aws_iam_role.glue_service_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_logs" {
-  role       = aws_iam_role.lambda_exec_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetBucketLocation",
+          "s3:ListBucket",
+          "s3:PutObject"
+        ]
+        Resource = aws_s3_bucket.data_bucket.arn
+      }
+    ]
+  })
 }

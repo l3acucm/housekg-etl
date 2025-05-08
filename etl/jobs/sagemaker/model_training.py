@@ -65,7 +65,6 @@ price_fact_table_path = f"s3a://{bucket_name}/{silver_key}/realty_price_fact_{ti
 realty_dim_table_path = f"s3a://{bucket_name}/{silver_key}/realty_dim_{timestamp_str}"
 price_fact_df = spark.read.format("parquet").load(price_fact_table_path)
 realty_dim_df = spark.read.format("parquet").load(realty_dim_table_path)
-prediction_fact_table_path = f"s3a://{bucket_name}/{silver_key}/prediction_fact_{timestamp_str}"
 
 # Prepare training df
 training_df = realty_dim_df.join(
