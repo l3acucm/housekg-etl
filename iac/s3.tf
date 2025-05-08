@@ -15,9 +15,9 @@ resource "aws_s3_object" "feature_engineering_script" {
 
 resource "aws_s3_object" "model_training_script" {
   bucket = aws_s3_bucket.data_bucket.bucket
-  key    = "etl/model_training.py"
-  source = "../etl/jobs/sagemaker/model_training.py"
-  etag = filebase64sha256("../etl/jobs/sagemaker/model_training.py")
+  key    = "etl/model_training.tar.gz"
+  source = "artifacts/model_training.tar.gz"
+  etag = filebase64sha256("artifacts/model_training.tar.gz")
 }
 
 resource "aws_s3_object" "model_deployment_script" {

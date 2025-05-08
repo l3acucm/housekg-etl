@@ -198,16 +198,6 @@ resource "aws_iam_role_policy" "glue_job_policy" {
       {
         Effect = "Allow"
         Action = [
-          "redshift:DescribeClusters",
-          "redshift:DescribeClusterSecurityGroups",
-          "redshift-data:ExecuteStatement",
-          "redshift-data:GetStatementResult"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
           "glue:GetTable",
           "glue:GetTables",
           "glue:GetDatabase",
@@ -221,16 +211,16 @@ resource "aws_iam_role_policy" "glue_job_policy" {
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "s3:GetObject",
           "s3:PutObject"
         ]
         Resource = "arn:aws:s3:::your-bucket-name/*"
       },
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "redshift-serverless:GetWorkgroup",
           "redshift-serverless:GetNamespace"
         ]
@@ -253,40 +243,71 @@ resource "aws_iam_role_policy" "glue_job_policy" {
   })
 }
 
-resource "aws_iam_role" "redshift_role" {
-  name = "redshift-serverless-role"
+resource "aws_iam_role" "sagemaker_pipeline_role" {
+  name = "sagemaker-pipeline-role"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "redshift.amazonaws.com"
-        }
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "sagemaker.amazonaws.com"
+        },
+        "Action" : "sts:AssumeRole"
       }
     ]
   })
 }
 
-resource "aws_iam_role_policy" "redshift_policy" {
-  name = "redshift-policy"
-  role = aws_iam_role.redshift_role.id
+resource "aws_iam_role_policy" "sagemaker_pipeline_policy" {
+  name = "sagemaker-pipeline-policy"
+  role = aws_iam_role.sagemaker_pipeline_role.id
 
   policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        Effect = "Allow"
-        Action = [
+        "Effect" : "Allow",
+        "Action" : [
           "s3:GetObject",
-          "s3:GetBucketLocation",
-          "s3:ListBucket",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:ListBucket"
+        ],
+        "Resource" : [
+          "arn:aws:s3:::${aws_s3_bucket.data_bucket.bucket}/*",
+          "arn:aws:s3:::${aws_s3_bucket.data_bucket.bucket}"
         ]
-        Resource = aws_s3_bucket.data_bucket.arn
-      }
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ],
+        "Resource" : "*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "sagemaker:*",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource" : "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
+        Resource = "arn:aws:iam::${var.aws_account_id}:role/sagemaker-pipeline-role"
+      },
     ]
   })
 }
