@@ -15,7 +15,6 @@ resource "aws_lambda_function" "ingestion_lambda" {
     variables = {
       BUCKET_NAME = var.s3_bucket
       FILE_NAME_PREFIX = "apartments"
-      CRAWLER_NAME = var.crawler_name
     }
   }
 }

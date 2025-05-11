@@ -31,7 +31,7 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
           "glue:UpdateCrawler",
           "glue:GetCrawler"
         ]
-        Resource = aws_glue_crawler.housekg_crawler.arn
+        Resource = aws_glue_crawler.housekg_ingestions_crawler.arn
       },
       {
         Effect = "Allow"
@@ -132,18 +132,16 @@ resource "aws_iam_role_policy" "glue_job_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow"
-        Action = [
-          "redshift:DescribeClusters",
-          "redshift:GetClusterCredentials",
-          "redshift-serverless:ListNamespaces",
-          "redshift-serverless:ListWorkgroups",
-          "redshift-serverless:GetCredentials",
-          "redshift-serverless:GetWorkgroup",
-          "redshift-serverless:GetNamespace"
-        ]
-        Resource = "*"
-      },
+            "Effect": "Allow",
+            "Action": [
+                "sagemaker:CreateTransformJob",
+                "sagemaker:DescribeTransformJob",
+                "sagemaker:DescribeModel"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
       {
         Effect = "Allow"
         Action = [
@@ -155,35 +153,10 @@ resource "aws_iam_role_policy" "glue_job_policy" {
       {
         Effect = "Allow"
         Action = [
-          "ec2:DescribeSubnets",
-          "ec2:DescribeVpcEndpoints",
-          "ec2:DescribeRouteTables",
-          "ec2:DescribeSecurityGroups",
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface",
-          "ec2:CreateTags"
+          "s3:*"
         ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject"
-        ]
-        Resource = "${aws_s3_bucket.data_bucket.arn}/etl/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "redshift-data:ExecuteStatement",
-          "redshift-data:DescribeStatement",
-          "redshift-data:GetStatementResult",
-          "redshift-data:CancelStatement",
-          "redshift-data:ListStatements",
-          "redshift-data:BatchExecuteStatement"
-        ]
-        Resource = "*"
+        Resource = [aws_s3_bucket.data_bucket.arn,
+        "${aws_s3_bucket.data_bucket.arn}/*"]
       },
       {
         Effect = "Allow"
@@ -198,15 +171,7 @@ resource "aws_iam_role_policy" "glue_job_policy" {
       {
         Effect = "Allow"
         Action = [
-          "glue:GetTable",
-          "glue:GetTables",
-          "glue:GetDatabase",
-          "glue:GetDatabases",
-          "glue:StartJobRun",
-          "glue:GetJobRun",
-          "glue:GetJob",
-          "glue:UpdateJob",
-          "glue:GetPartitions"
+          "glue:*"
         ]
         Resource = "*"
       },
@@ -239,75 +204,6 @@ resource "aws_iam_role_policy" "glue_job_policy" {
           "arn:aws:s3:::housekg-etl/*"
         ]
       }
-    ]
-  })
-}
-
-resource "aws_iam_role" "sagemaker_pipeline_role" {
-  name = "sagemaker-pipeline-role"
-
-  assume_role_policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Principal" : {
-          "Service" : "sagemaker.amazonaws.com"
-        },
-        "Action" : "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "sagemaker_pipeline_policy" {
-  name = "sagemaker-pipeline-policy"
-  role = aws_iam_role.sagemaker_pipeline_role.id
-
-  policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Action" : [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket"
-        ],
-        "Resource" : [
-          "arn:aws:s3:::${aws_s3_bucket.data_bucket.bucket}/*",
-          "arn:aws:s3:::${aws_s3_bucket.data_bucket.bucket}"
-        ]
-      },
-      {
-        "Effect" : "Allow",
-        "Action" : [
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:BatchCheckLayerAvailability"
-        ],
-        "Resource" : "*"
-      },
-      {
-        "Effect" : "Allow",
-        "Action" : [
-          "sagemaker:*",
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        "Resource" : "*"
-      },
-      {
-        Effect   = "Allow"
-        Action   = "iam:PassRole"
-        Resource = "arn:aws:iam::${var.aws_account_id}:role/sagemaker-pipeline-role"
-      },
     ]
   })
 }
