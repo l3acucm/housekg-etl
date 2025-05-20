@@ -1,5 +1,3 @@
-
-
 resource "aws_iam_role" "glue_crawler_role" {
   name = "glue_crawler_role"
   assume_role_policy = jsonencode({
@@ -87,16 +85,16 @@ resource "aws_iam_role_policy" "glue_job_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-            "Effect": "Allow",
-            "Action": [
-                "sagemaker:CreateTransformJob",
-                "sagemaker:DescribeTransformJob",
-                "sagemaker:DescribeModel"
-            ],
-            "Resource": [
-                "*"
-            ]
-        },
+        "Effect" : "Allow",
+        "Action" : [
+          "sagemaker:CreateTransformJob",
+          "sagemaker:DescribeTransformJob",
+          "sagemaker:DescribeModel"
+        ],
+        "Resource" : [
+          "*"
+        ]
+      },
       {
         Effect = "Allow"
         Action = [
@@ -110,8 +108,10 @@ resource "aws_iam_role_policy" "glue_job_policy" {
         Action = [
           "s3:*"
         ]
-        Resource = [aws_s3_bucket.data_bucket.arn,
-        "${aws_s3_bucket.data_bucket.arn}/*"]
+        Resource = [
+          aws_s3_bucket.data_bucket.arn,
+          "${aws_s3_bucket.data_bucket.arn}/*"
+        ]
       },
       {
         Effect = "Allow"
@@ -196,6 +196,7 @@ resource "aws_glue_job" "feature_engineering" {
   role_arn          = aws_iam_role.glue_job_role.arn
   glue_version      = "5.0"
   worker_type       = "G.1X"
+  execution_class   = "FLEX"
   number_of_workers = 2
   timeout           = 60
   max_retries       = 0

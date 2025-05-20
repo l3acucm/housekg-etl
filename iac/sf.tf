@@ -111,7 +111,7 @@ EOF
 resource "aws_cloudwatch_event_rule" "hourly_trigger" {
   name                = "data-processing-hourly-trigger"
   description         = "Triggers data processing workflow every hour"
-  schedule_expression = "cron(0 * * * ? *)"
+  schedule_expression = "cron(0 12 * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "step_function_target" {
