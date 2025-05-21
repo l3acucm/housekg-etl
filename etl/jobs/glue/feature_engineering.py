@@ -13,12 +13,10 @@ import torch
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-
-# Set device for PyTorch
-#uncomment for glue
 from awsglue.context import GlueContext
 from awsglue.utils import getResolvedOptions
 from awsglue.dynamicframe import DynamicFrame
+
 glue_context = GlueContext(SparkContext())
 args = getResolvedOptions(sys.argv, ['BUCKET'])
 bucket = args['BUCKET']
@@ -110,7 +108,7 @@ def get_cleaned_bronze_df():
             .withColumn("sqm_price", F.col("price") / F.col("square"))
             .filter(F.col("sqm_price") > 300)
             .filter(F.col("sqm_price") < 2500)
-            .drop("price", "square")
+            .drop("price")
             )
 
 
@@ -187,6 +185,7 @@ def update_scd2_table(*, parquet_path: str, fields: List[T.StructField], compari
     new_df.unpersist()
     return spark.read.parquet(parquet_path)
 
+
 def replace_fact_price_with_predicted_in_df(df):
     categorical_transformer = Pipeline(steps=[
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
@@ -205,6 +204,25 @@ def replace_fact_price_with_predicted_in_df(df):
     X_all = preprocessor.fit_transform(df)
     input_dim = X_all.shape[1]
     predictions = np.zeros(len(df))
+
+    # Recommend optimal hyperparameters based on dataset size
+    dataset_size = len(df)
+
+    # For small datasets (around 1500 samples), we need to be careful about overfitting
+    # Recommended learning rate and epochs based on dataset size
+    if dataset_size <= 1000:
+        learning_rate = 0.01  # Higher learning rate for very small datasets
+        epochs = 500  # Fewer epochs to prevent overfitting
+    elif dataset_size <= 2000:  # This covers our case of 1500
+        learning_rate = 0.005  # Moderate learning rate for small datasets
+        epochs = 750  # Moderate number of epochs
+    else:
+        learning_rate = 0.001  # Lower learning rate for larger datasets
+        epochs = 1000  # More epochs for better convergence
+
+    print(f"Dataset size: {dataset_size}")
+    print(f"Recommended learning rate: {learning_rate}")
+    print(f"Recommended epochs: {epochs}")
 
     # Loop through each row
     for i in range(len(df)):
@@ -235,10 +253,9 @@ def replace_fact_price_with_predicted_in_df(df):
 
         # Train model
         criterion = nn.MSELoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
         # Training loop
-        epochs = 500
         for epoch in range(epochs):
             # Forward pass
             y_pred = model(X_train_tensor)
@@ -258,7 +275,7 @@ def replace_fact_price_with_predicted_in_df(df):
         if i % 100 == 0 or i == len(df) - 1:
             print(f"Processed {i}/{len(df)} samples")
 
-    df["predicted_" + target_col] = predictions
+    df[target_col] = predictions
     return df
 
 
@@ -282,7 +299,7 @@ def main():
 
     training_df = realty_dim_pd_df.merge(current_prices_pd_df, on="slug")
     predicted_prices_pd_df = replace_fact_price_with_predicted_in_df(training_df)
-    prediction_fact_df = update_scd2_table(
+    update_scd2_table(
         parquet_path=prediction_fact_s3_uri,
         fields=[T.StructField("sqm_price", T.DoubleType(), False)],
         comparison_df=spark.createDataFrame(predicted_prices_pd_df),

@@ -108,14 +108,14 @@ EOF
 }
 
 # Schedule the Step Function to run every hour
-resource "aws_cloudwatch_event_rule" "hourly_trigger" {
-  name                = "data-processing-hourly-trigger"
-  description         = "Triggers data processing workflow every hour"
-  schedule_expression = "cron(0 12 * * ? *)"
+resource "aws_cloudwatch_event_rule" "daily_trigger" {
+  name                = "data-processing-daily-trigger"
+  description         = "Triggers data processing workflow every day"
+  schedule_expression = "cron(0 6 * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "step_function_target" {
-  rule     = aws_cloudwatch_event_rule.hourly_trigger.name
+  rule     = aws_cloudwatch_event_rule.daily_trigger.name
   arn      = aws_sfn_state_machine.data_processing_workflow.arn
   role_arn = aws_iam_role.cloudwatch_role.arn
 }
