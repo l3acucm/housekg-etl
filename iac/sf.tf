@@ -51,7 +51,7 @@ resource "aws_sfn_state_machine" "data_processing_workflow" {
     },
     "StartGlueJob": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::glue:startJobRun",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
       "Parameters": {
         "JobName": "${aws_glue_job.feature_engineering.name}"
       },
@@ -98,6 +98,19 @@ resource "aws_sfn_state_machine" "data_processing_workflow" {
               "End": true
             }
           }
+        },
+        {
+          "StartAt": "RunMarketSummaryCrawler",
+          "States": {
+            "RunMarketSummaryCrawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Parameters": {
+                "Name": "market_summary"
+              },
+              "End": true
+            }
+          }
         }
       ],
       "End": true
@@ -111,7 +124,7 @@ EOF
 resource "aws_cloudwatch_event_rule" "daily_trigger" {
   name                = "data-processing-daily-trigger"
   description         = "Triggers data processing workflow every day"
-  schedule_expression = "cron(0 6 * * ? *)"
+  schedule_expression = "cron(0 1 * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "step_function_target" {

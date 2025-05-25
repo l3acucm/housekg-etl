@@ -283,3 +283,23 @@ resource "aws_glue_crawler" "prediction_fact" {
     }
   })
 }
+
+resource "aws_glue_crawler" "market_summary" {
+  name          = "market_summary"
+  role          = aws_iam_role.glue_crawler_role.arn
+  database_name = aws_glue_catalog_database.data_db.name
+
+  s3_target {
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/market_summary"
+  }
+
+  configuration = jsonencode({
+    Version = 1.0
+    CrawlerOutput = {
+      Tables = { AddOrUpdateBehavior = "MergeNewColumns" }
+    }
+    Grouping = {
+      TableGroupingPolicy = "CombineCompatibleSchemas"
+    }
+  })
+}

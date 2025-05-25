@@ -13,9 +13,6 @@ import torch
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from awsglue.context import GlueContext
-from awsglue.utils import getResolvedOptions
-from awsglue.dynamicframe import DynamicFrame
 
 glue_context = GlueContext(SparkContext())
 args = getResolvedOptions(sys.argv, ['BUCKET'])
@@ -33,9 +30,11 @@ s3_client = boto3.client('s3')
 price_fact_table_name = f"realty_price_fact"
 realty_dim_table_name = f"realty_dim"
 prediction_fact_table_name = f"prediction_price_fact"
+market_summary_table_name = f"market_summary"
 realty_dim_table_s3_uri = f"s3://{bucket}/{silver_key}/{realty_dim_table_name}"
 price_fact_s3_uri = f"s3://{bucket}/{silver_key}/{price_fact_table_name}"
 prediction_fact_s3_uri = f"s3://{bucket}/{silver_key}/{prediction_fact_table_name}"
+market_summary_s3_uri = f"s3://{bucket}/{silver_key}/{market_summary_table_name}"
 
 bronze_table_name = f"apartments_{timestamp_str}_json"
 
@@ -108,18 +107,30 @@ def get_cleaned_bronze_df():
             .withColumn("sqm_price", F.col("price") / F.col("square"))
             .filter(F.col("sqm_price") > 300)
             .filter(F.col("sqm_price") < 2500)
+            .filter(F.col("micro_district").isNotNull())
             .drop("price")
             )
 
 
-def update_scd2_table(*, parquet_path: str, fields: List[T.StructField], comparison_df: DataFrame, partition_col: str):
-    schema = T.StructType([
-        T.StructField("slug", T.StringType(), False),  # Key
-        *fields,  # Target value
+def update_scd2_table(*, key_field: T.StructField, parquet_path: str, compared_fields: List[T.StructField],
+                      comparison_df: DataFrame, partition_col: str):
+    # Add change columns for double type fields
+    schema_fields = [key_field]  # Key
+
+    for cf in compared_fields:
+        schema_fields.append(cf)  # Original field
+        # Add change column for double type fields
+        if isinstance(cf.dataType, T.DoubleType):
+            schema_fields.append(T.StructField(f"{cf.name}_change", T.DoubleType(), True))
+
+    # Add SCD2 fields
+    schema_fields.extend([
         T.StructField("effective_from", T.TimestampType(), False),  # SCD2 valid from
         T.StructField("effective_to", T.TimestampType(), True),  # SCD2 valid to
         T.StructField("is_current", T.BooleanType(), False)  # SCD2 current flag
     ])
+
+    schema = T.StructType(schema_fields)
     try:
         current_scd2_df = spark.read.schema(schema).parquet(parquet_path)
     except:
@@ -128,59 +139,141 @@ def update_scd2_table(*, parquet_path: str, fields: List[T.StructField], compari
     # Join current prices with new data
     joined_df = comparison_df.alias("new").join(
         current_scd2_df.filter("is_current = true").alias("current"),
-        comparison_df["slug"] == current_scd2_df["slug"],
+        comparison_df[key_field.name] == current_scd2_df[key_field.name],
         "full_outer"
     )
 
     # Handle potential null values in field comparisons
     fields_comparison_list = []
-    for field in fields:
+    for cf in compared_fields:
         fields_comparison_list.append(
-            f"(new.{field.name} IS NOT NULL AND current.{field.name} IS NOT NULL AND new.{field.name} != current.{field.name}) OR " +
-            f"(new.{field.name} IS NULL AND current.{field.name} IS NOT NULL) OR " +
-            f"(new.{field.name} IS NOT NULL AND current.{field.name} IS NULL)"
+            f"(new.{cf.name} IS NOT NULL AND current.{cf.name} IS NOT NULL AND new.{cf.name} != current.{cf.name}) OR " +
+            f"(new.{cf.name} IS NULL AND current.{cf.name} IS NOT NULL) OR " +
+            f"(new.{cf.name} IS NOT NULL AND current.{cf.name} IS NULL)"
         )
     fields_comparison_filter_str = ' OR '.join(fields_comparison_list)
 
     # Records to update (close existing current records)
-    updates_df = joined_df.where(
-        f"current.slug IS NOT NULL AND new.slug IS NOT NULL AND ({fields_comparison_filter_str})"
-    ).select(
-        F.col("current.slug"),
-        *[F.col(f"current.{field.name}") for field in fields],
+    updates_select = [
+        F.col(f"current.{key_field.name}")
+    ]
+
+    # Add fields and keep existing change values for double type fields
+    for cf in compared_fields:
+        updates_select.append(F.col(f"current.{cf.name}"))
+
+        # Include existing change columns for double type fields
+        if isinstance(cf.dataType, T.DoubleType):
+            change_field_name = f"{cf.name}_change"
+            updates_select.append(F.col(f"current.{change_field_name}"))
+
+    # Add SCD2 fields
+    updates_select.extend([
         F.col("current.effective_from"),
         F.current_timestamp().alias("effective_to"),
         F.lit(False).alias("is_current")
-    )
+    ])
+
+    updates_df = joined_df.where(
+        f"current.{key_field.name} IS NOT NULL AND new.{key_field.name} IS NOT NULL AND ({fields_comparison_filter_str})"
+    ).select(*updates_select)
 
     # New records (for changed values or new slugs)
-    new_records_df = joined_df.where(
-        f"(current.slug IS NULL) OR (current.slug IS NOT NULL AND ({fields_comparison_filter_str}))"
-    ).select(
-        F.coalesce(F.col("new.slug"), F.col("current.slug")).alias("slug"),
-        *[F.col(f"new.{field.name}") for field in fields],
+    new_records_select = [
+        F.coalesce(F.col(f"new.{key_field.name}"), F.col(f"current.{key_field.name}")).alias(key_field.name)
+    ]
+
+    # Add fields and calculate change for double type fields
+    for cf in compared_fields:
+        new_records_select.append(F.col(f"new.{cf.name}"))
+
+        # Calculate percentage change for double type fields
+        if isinstance(cf.dataType, T.DoubleType):
+            change_field_name = f"{cf.name}_change"
+            # Calculate percentage change: (new - old) / old * 100
+            # If old value is null or 0, or new value is null, set change to 100.0 (100%)
+            new_records_select.append(
+                F.when(
+                    (F.col(f"current.{cf.name}").isNull()) |
+                    (F.col(f"current.{cf.name}") == 0) |
+                    (F.col(f"new.{cf.name}").isNull()),
+                    F.lit(100.0)  # 100% change
+                ).otherwise(
+                    ((F.col(f"new.{cf.name}") - F.col(f"current.{cf.name}")) /
+                     F.col(f"current.{cf.name}") * 100.0)  # Calculate percentage change
+                ).alias(change_field_name)
+            )
+
+    # Add SCD2 fields
+    new_records_select.extend([
         F.current_timestamp().alias("effective_from"),
         F.lit(None).cast("timestamp").alias("effective_to"),
         F.lit(True).alias("is_current")
-    )
+    ])
+
+    new_records_df = joined_df.where(
+        f"(current.{key_field.name} IS NULL) OR (current.{key_field.name} IS NOT NULL AND ({fields_comparison_filter_str}))"
+    ).select(*new_records_select)
 
     # Keep unchanged current records
-    unchanged_records_df = joined_df.where(
-        f"current.slug IS NOT NULL AND new.slug IS NOT NULL AND NOT ({fields_comparison_filter_str})"
-    ).select(
-        F.col("current.slug"),
-        *[F.col(f"current.{field.name}").cast(field.dataType) for field in fields],
+    unchanged_records_select = [
+        F.col(f"current.{key_field.name}")
+    ]
+
+    # Add fields and keep existing change values for double type fields
+    for cf in compared_fields:
+        unchanged_records_select.append(F.col(f"current.{cf.name}").cast(cf.dataType))
+
+        # Include existing change columns for double type fields
+        if isinstance(cf.dataType, T.DoubleType):
+            change_field_name = f"{cf.name}_change"
+            unchanged_records_select.append(F.col(f"current.{change_field_name}"))
+
+    # Add SCD2 fields
+    unchanged_records_select.extend([
         F.col("current.effective_from"),
         F.col("current.effective_to"),
         F.col("current.is_current")
-    )
+    ])
+
+    unchanged_records_df = joined_df.where(
+        f"current.{key_field.name} IS NOT NULL AND new.{key_field.name} IS NOT NULL AND NOT ({fields_comparison_filter_str})"
+    ).select(*unchanged_records_select)
 
     # Historical records (not current)
     historical_records_df = current_scd2_df.filter("is_current = false")
 
+    # Close entries when their {key_field.name} is not in the comparison dataframe
+    to_close_select = [
+        F.col(f"{key_field.name}")
+    ]
+
+    # Add fields and keep existing change values for double type fields
+    for cf in compared_fields:
+        to_close_select.append(F.col(cf.name))
+
+        # Include existing change columns for double type fields
+        if isinstance(cf.dataType, T.DoubleType):
+            change_field_name = f"{cf.name}_change"
+            to_close_select.append(F.col(change_field_name))
+
+    # Add SCD2 fields with updated values
+    to_close_select.extend([
+        F.col("effective_from"),
+        F.current_timestamp().alias("effective_to"),
+        F.lit(False).alias("is_current")
+    ])
+
+    # Identify records in current_scd2_df that don't exist in comparison_df
+    to_close_df = current_scd2_df.filter("is_current = true").alias("current").join(
+        comparison_df.alias("new"),
+        F.col(f"current.{key_field.name}") == F.col(f"new.{key_field.name}"),
+        "left_anti"  # Keep only records from current_scd2_df that don't match in comparison_df
+    ).select(*to_close_select)
+
     # Union all dataframes
     new_df = updates_df.unionAll(new_records_df).unionAll(unchanged_records_df).unionAll(
-        historical_records_df)
+        historical_records_df).unionAll(to_close_df)
     new_df.write.mode("overwrite").parquet(parquet_path)
     new_df.unpersist()
     return spark.read.parquet(parquet_path)
@@ -279,16 +372,81 @@ def replace_fact_price_with_predicted_in_df(df):
     return df
 
 
+def create_market_summary_table(cleaned_df_bronze):
+    # Add total_price column (sqm_price * square)
+    df_with_price = cleaned_df_bronze.withColumn("total_price", F.col("sqm_price") * F.col("square"))
+
+    # Group by micro_district
+    district_summary = df_with_price.groupBy("micro_district").agg(
+        F.count("slug").cast(T.DoubleType()).alias("object_count"),  # Cast to double for change tracking
+        F.sum("total_price").alias("total_price"),
+        F.sum("square").alias("total_square")
+    )
+
+    # Create a row for the whole market (null micro_district)
+    market_summary = df_with_price.agg(
+        F.lit(None).cast(T.StringType()).alias("micro_district"),
+        F.count("slug").cast(T.DoubleType()).alias("object_count"),  # Cast to double for change tracking
+        F.sum("total_price").alias("total_price"),
+        F.sum("square").alias("total_square")
+    )
+
+    # Combine district and market summaries
+    combined_summary = district_summary.unionAll(market_summary)
+
+    # Create a unique slug for each row (micro_district + date or "market" + date)
+    combined_summary = combined_summary.withColumn(
+        "slug",
+        F.when(
+            F.col("micro_district").isNull(),
+            F.lit("market")
+        ).otherwise(
+            F.col("micro_district")
+        )
+    ).drop('micro_district')
+
+    # Use update_scd2_table to track changes
+    fields = [
+        T.StructField("object_count", T.DoubleType(), False),  # Using DoubleType to enable change tracking
+        T.StructField("total_price", T.DoubleType(), False),
+        T.StructField("total_square", T.DoubleType(), False)
+    ]
+
+    # Create comparison DataFrame for update_scd2_table
+    comparison_df = combined_summary.select(
+        "slug",
+        "object_count",
+        "total_price",
+        "total_square",
+        F.current_timestamp().alias("timestamp")
+    )
+
+    # Update the SCD2 table to track changes
+    market_summary_df = update_scd2_table(
+        key_field=T.StructField("slug", T.StringType(), False),
+        parquet_path=market_summary_s3_uri,
+        compared_fields=fields,
+        comparison_df=comparison_df,
+        partition_col="is_current"
+    )
+
+    return market_summary_df
+
+
 def main():
     cleaned_df_bronze = get_cleaned_bronze_df()
     realty_dim_df = cleaned_df_bronze.drop("sqm_price")
     realty_dim_df.write.mode("overwrite").parquet(realty_dim_table_s3_uri)
     price_fact_df = update_scd2_table(
+        key_field=T.StructField("slug", T.StringType(), False),
         parquet_path=price_fact_s3_uri,
-        fields=[T.StructField("sqm_price", T.DoubleType(), False)],
+        compared_fields=[T.StructField("sqm_price", T.DoubleType(), False)],
         comparison_df=cleaned_df_bronze.select("slug", "sqm_price", F.col("updated_at").alias("timestamp")),
         partition_col="is_current"
     )
+
+    # Create and save market summary table
+    market_summary_df = create_market_summary_table(cleaned_df_bronze)
 
     price_fact_pd_df = price_fact_df.toPandas()
     realty_dim_pd_df = realty_dim_df.toPandas()
@@ -300,8 +458,9 @@ def main():
     training_df = realty_dim_pd_df.merge(current_prices_pd_df, on="slug")
     predicted_prices_pd_df = replace_fact_price_with_predicted_in_df(training_df)
     update_scd2_table(
+        key_field=T.StructField("slug", T.StringType(), False),
         parquet_path=prediction_fact_s3_uri,
-        fields=[T.StructField("sqm_price", T.DoubleType(), False)],
+        compared_fields=[T.StructField("sqm_price", T.DoubleType(), False)],
         comparison_df=spark.createDataFrame(predicted_prices_pd_df),
         partition_col="is_current"
     )
