@@ -32,14 +32,8 @@ resource "aws_iam_role_policy" "glue_crawler_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:GetObject"
-        ]
-        Resource = "arn:aws:s3:::${aws_s3_bucket.data_bucket.bucket}/ingestions/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
           "glue:CreateTable",
+          "glue:UpdateTable",
           "glue:GetDatabase",
           "glue:UpdateDatabase",
           "glue:CreatePartition",
@@ -191,6 +185,7 @@ resource "aws_glue_classifier" "housekg_json_classifier" {
     json_path = "$[*]"
   }
 }
+
 resource "aws_glue_job" "feature_engineering" {
   name              = "house_feature_engineering"
   role_arn          = aws_iam_role.glue_job_role.arn
@@ -270,7 +265,7 @@ resource "aws_glue_crawler" "prediction_fact" {
   database_name = aws_glue_catalog_database.data_db.name
 
   s3_target {
-    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/prediction_fact"
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/prediction_price_fact"
   }
 
   configuration = jsonencode({

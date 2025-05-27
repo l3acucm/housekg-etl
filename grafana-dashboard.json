@@ -1,0 +1,2044 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "SELECT \nCONCAT('https://house.kg/details/', r.slug) AS url,\nf.sqm_price,\nf.sqm_price_change\nFROM realty_price_fact f\nJOIN realty_dim r ON f.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nAND f.is_current=true ORDER BY f.sqm_price_change",
+          "refId": "A"
+        }
+      ],
+      "title": "Losers",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "SELECT \nCONCAT('https://house.kg/details/', r.slug) AS url,\nf.sqm_price,\nf.sqm_price_change\nFROM realty_price_fact f\nJOIN realty_dim r ON f.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nAND f.is_current=true ORDER BY f.sqm_price_change DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Gainers",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "url"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 461
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "predicted_sqm_price"
+          }
+        ]
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "SELECT \nCONCAT('https://house.kg/details/', p.slug) AS url, \nr.square, \np.sqm_price predicted_sqm_price, \nf.sqm_price fact_sqm_price,\nf.sqm_price/p.sqm_price AS ratio\nFROM prediction_price_fact p JOIN realty_price_fact f ON p.slug=f.slug JOIN realty_dim r ON p.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nORDER BY ratio;",
+          "refId": "A",
+          "table": "prediction_price_fact"
+        }
+      ],
+      "title": "Underestimated",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 4,
+      "maxDataPoints": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, total_price_change FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market volume change",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, total_price FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market volume",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, object_count_change FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market size change",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "description": "Count of selling objects",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, object_count FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market size",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, total_square_change FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market square change",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "default": false,
+        "type": "grafana-athena-datasource",
+        "uid": "ben2f8338veo0e"
+      },
+      "description": "Square of all selling objects",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, total_square FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market square",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "Золотой квадрат",
+          "value": "123"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "District",
+        "multi": false,
+        "name": "district",
+        "options": [
+          {
+            "selected": false,
+            "text": "market",
+            "value": "market"
+          },
+          {
+            "selected": false,
+            "text": "69-га",
+            "value": "177"
+          },
+          {
+            "selected": false,
+            "text": "Азия Молл",
+            "value": "122"
+          },
+          {
+            "selected": false,
+            "text": "Ак Кеме",
+            "value": "133"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Орго ж/м",
+            "value": "57"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Ордо 3 ж/м",
+            "value": "234"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Ордо ж/м",
+            "value": "56"
+          },
+          {
+            "selected": false,
+            "text": "Академия Наук",
+            "value": "150"
+          },
+          {
+            "selected": false,
+            "text": "Ала-Тоо 3 ж-м",
+            "value": "238"
+          },
+          {
+            "selected": false,
+            "text": "Ала-Тоо м-н",
+            "value": "48"
+          },
+          {
+            "selected": false,
+            "text": "Арча-Бешик ж/м",
+            "value": "55"
+          },
+          {
+            "selected": false,
+            "text": "Баха",
+            "value": "166"
+          },
+          {
+            "selected": false,
+            "text": "БГУ",
+            "value": "92"
+          },
+          {
+            "selected": false,
+            "text": "Верхний Джал м-н",
+            "value": "44"
+          },
+          {
+            "selected": false,
+            "text": "Гагарина",
+            "value": "167"
+          },
+          {
+            "selected": false,
+            "text": "Госрегистр",
+            "value": "96"
+          },
+          {
+            "selected": false,
+            "text": "Джал 15 м-н",
+            "value": "86"
+          },
+          {
+            "selected": false,
+            "text": "Джал-23 м-н (Нижний Джал)",
+            "value": "66"
+          },
+          {
+            "selected": false,
+            "text": "Джал-29 м-н",
+            "value": "47"
+          },
+          {
+            "selected": false,
+            "text": "Джал-30 м-н",
+            "value": "63"
+          },
+          {
+            "selected": false,
+            "text": "Джальская больница",
+            "value": "164"
+          },
+          {
+            "selected": false,
+            "text": "ж/м Ала-Арча 2",
+            "value": "176"
+          },
+          {
+            "selected": false,
+            "text": "Завод Кока-Кола",
+            "value": "180"
+          },
+          {
+            "selected": false,
+            "text": "Ипподром",
+            "value": "131"
+          },
+          {
+            "selected": false,
+            "text": "Калыка Акиева - Льва Толстого",
+            "value": "178"
+          },
+          {
+            "selected": false,
+            "text": "Киргизия 1 ж/м",
+            "value": "85"
+          },
+          {
+            "selected": false,
+            "text": "Киргизия-2 м-н",
+            "value": "50"
+          },
+          {
+            "selected": false,
+            "text": "Кызыл-Аскер ж/м",
+            "value": "87"
+          },
+          {
+            "selected": false,
+            "text": "Лущихина - Льва Толстого",
+            "value": "179"
+          },
+          {
+            "selected": false,
+            "text": "Молодая Гвардия",
+            "value": "144"
+          },
+          {
+            "selected": false,
+            "text": "Московская - Белинка",
+            "value": "165"
+          },
+          {
+            "selected": false,
+            "text": "Московская - Уметалиева",
+            "value": "168"
+          },
+          {
+            "selected": false,
+            "text": "Орок ж/м",
+            "value": "59"
+          },
+          {
+            "selected": false,
+            "text": "Ошский рынок",
+            "value": "109"
+          },
+          {
+            "selected": false,
+            "text": "Пишпек ж/м",
+            "value": "54"
+          },
+          {
+            "selected": false,
+            "text": "Рабочий Городок",
+            "value": "53"
+          },
+          {
+            "selected": false,
+            "text": "с. Верхний Орок",
+            "value": "202"
+          },
+          {
+            "selected": false,
+            "text": "с. Джал",
+            "value": "224"
+          },
+          {
+            "selected": false,
+            "text": "с. Калтар",
+            "value": "222"
+          },
+          {
+            "selected": false,
+            "text": "с. Кашка-Баш",
+            "value": "221"
+          },
+          {
+            "selected": false,
+            "text": "с. Нижний Орок",
+            "value": "203"
+          },
+          {
+            "selected": false,
+            "text": "с. Новопавловка",
+            "value": "200"
+          },
+          {
+            "selected": false,
+            "text": "с. Орто-Сай",
+            "value": "52"
+          },
+          {
+            "selected": false,
+            "text": "с. Сарбан",
+            "value": "223"
+          },
+          {
+            "selected": false,
+            "text": "с. Селекционное",
+            "value": "220"
+          },
+          {
+            "selected": false,
+            "text": "с. Чон-Арык",
+            "value": "51"
+          },
+          {
+            "selected": false,
+            "text": "СК. Тоо-Жели",
+            "value": "225"
+          },
+          {
+            "selected": false,
+            "text": "Средний Джал м-н",
+            "value": "45"
+          },
+          {
+            "selected": false,
+            "text": "Старый аэропорт",
+            "value": "132"
+          },
+          {
+            "selected": false,
+            "text": "Тенир-Тоо м-н",
+            "value": "49"
+          },
+          {
+            "selected": false,
+            "text": "Филармония",
+            "value": "116"
+          },
+          {
+            "selected": false,
+            "text": "Шлагбаум",
+            "value": "119"
+          },
+          {
+            "selected": false,
+            "text": "Ынтымак ж/м",
+            "value": "58"
+          },
+          {
+            "selected": false,
+            "text": "10 м-н",
+            "value": "8"
+          },
+          {
+            "selected": false,
+            "text": "11 м-н",
+            "value": "9"
+          },
+          {
+            "selected": false,
+            "text": "12 м-н",
+            "value": "10"
+          },
+          {
+            "selected": false,
+            "text": "3 м-н",
+            "value": "1"
+          },
+          {
+            "selected": false,
+            "text": "4 м-н",
+            "value": "2"
+          },
+          {
+            "selected": false,
+            "text": "5 м-н",
+            "value": "3"
+          },
+          {
+            "selected": false,
+            "text": "6 м-н",
+            "value": "4"
+          },
+          {
+            "selected": false,
+            "text": "7 м-н",
+            "value": "5"
+          },
+          {
+            "selected": false,
+            "text": "8 м-н",
+            "value": "6"
+          },
+          {
+            "selected": false,
+            "text": "9 м-н",
+            "value": "7"
+          },
+          {
+            "selected": false,
+            "text": "Айкол",
+            "value": "226"
+          },
+          {
+            "selected": false,
+            "text": "Ала-Арча 3",
+            "value": "240"
+          },
+          {
+            "selected": false,
+            "text": "Ала-Арча ж/м",
+            "value": "175"
+          },
+          {
+            "selected": false,
+            "text": "Алматинка - Магистраль",
+            "value": "159"
+          },
+          {
+            "selected": false,
+            "text": "Алтын-Ордо ж/м",
+            "value": "22"
+          },
+          {
+            "selected": false,
+            "text": "Анар-Бак ж/м",
+            "value": "227"
+          },
+          {
+            "selected": false,
+            "text": "Асанбай м-н",
+            "value": "11"
+          },
+          {
+            "selected": false,
+            "text": "АУЦА",
+            "value": "141"
+          },
+          {
+            "selected": false,
+            "text": "Ахунбаева-Достоевского",
+            "value": "235"
+          },
+          {
+            "selected": false,
+            "text": "АЮ Grand",
+            "value": "90"
+          },
+          {
+            "selected": false,
+            "text": "Восточная Промзона",
+            "value": "192"
+          },
+          {
+            "selected": false,
+            "text": "Ген прокуратура",
+            "value": "158"
+          },
+          {
+            "selected": false,
+            "text": "Горького - Алма-Атинская",
+            "value": "182"
+          },
+          {
+            "selected": false,
+            "text": "Жилгородок Ницца",
+            "value": "69"
+          },
+          {
+            "selected": false,
+            "text": "Жилгородок Совмина ж/м",
+            "value": "21"
+          },
+          {
+            "selected": false,
+            "text": "Кара Дарыя",
+            "value": "157"
+          },
+          {
+            "selected": false,
+            "text": "Кара-Жыгач ж/м",
+            "value": "17"
+          },
+          {
+            "selected": false,
+            "text": "Карла Маркса",
+            "value": "151"
+          },
+          {
+            "selected": false,
+            "text": "КГУСТА",
+            "value": "102"
+          },
+          {
+            "selected": false,
+            "text": "Кок-Жар ж/м",
+            "value": "16"
+          },
+          {
+            "selected": false,
+            "text": "Кок-Жар м-н",
+            "value": "13"
+          },
+          {
+            "selected": false,
+            "text": "Кулатова- Матросова",
+            "value": "181"
+          },
+          {
+            "selected": false,
+            "text": "Магистраль",
+            "value": "145"
+          },
+          {
+            "selected": false,
+            "text": "Матросова",
+            "value": "152"
+          },
+          {
+            "selected": false,
+            "text": "Мед. академия",
+            "value": "107"
+          },
+          {
+            "selected": false,
+            "text": "Ортосайский рынок",
+            "value": "108"
+          },
+          {
+            "selected": false,
+            "text": "Оскон-Ордо ж/м",
+            "value": "207"
+          },
+          {
+            "selected": false,
+            "text": "Парк Ататюрк",
+            "value": "125"
+          },
+          {
+            "selected": false,
+            "text": "Полицейский городок м-н",
+            "value": "236"
+          },
+          {
+            "selected": false,
+            "text": "Проспект Айтматова",
+            "value": "239"
+          },
+          {
+            "selected": false,
+            "text": "Рухий Мурас ж/м",
+            "value": "20"
+          },
+          {
+            "selected": false,
+            "text": "с. Кок-Джар",
+            "value": "205"
+          },
+          {
+            "selected": false,
+            "text": "Советская - Скрябина",
+            "value": "161"
+          },
+          {
+            "selected": false,
+            "text": "Таш Рабат",
+            "value": "113"
+          },
+          {
+            "selected": false,
+            "text": "Токольдош ж/м",
+            "value": "18"
+          },
+          {
+            "selected": false,
+            "text": "Тунгуч 44",
+            "value": "241"
+          },
+          {
+            "selected": false,
+            "text": "Тунгуч м-н",
+            "value": "12"
+          },
+          {
+            "selected": false,
+            "text": "Улан м-н",
+            "value": "14"
+          },
+          {
+            "selected": false,
+            "text": "Улан-2 м-н",
+            "value": "15"
+          },
+          {
+            "selected": false,
+            "text": "Учкун-2 ж/м",
+            "value": "19"
+          },
+          {
+            "selected": false,
+            "text": "Физкультурный",
+            "value": "154"
+          },
+          {
+            "selected": false,
+            "text": "Чокана Валиханова - Исакеева",
+            "value": "183"
+          },
+          {
+            "selected": false,
+            "text": "1000 мелочей",
+            "value": "147"
+          },
+          {
+            "selected": false,
+            "text": "110 квартал ж/м",
+            "value": "74"
+          },
+          {
+            "selected": false,
+            "text": "VEFA",
+            "value": "120"
+          },
+          {
+            "selected": false,
+            "text": "Ак Эмир рынок",
+            "value": "146"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Босого ж/м",
+            "value": "32"
+          },
+          {
+            "selected": false,
+            "text": "Алтын-Бешик ж/м",
+            "value": "28"
+          },
+          {
+            "selected": false,
+            "text": "Алтын-Казык ж/м",
+            "value": "27"
+          },
+          {
+            "selected": false,
+            "text": "Аска-Таш ж/м",
+            "value": "29"
+          },
+          {
+            "selected": false,
+            "text": "Ата Журт",
+            "value": "233"
+          },
+          {
+            "selected": false,
+            "text": "Балбан-Таймаш ж/м",
+            "value": "73"
+          },
+          {
+            "selected": false,
+            "text": "Бишкек-Парк",
+            "value": "121"
+          },
+          {
+            "selected": false,
+            "text": "Боталиева - Тулебердиева",
+            "value": "197"
+          },
+          {
+            "selected": false,
+            "text": "Вечерка",
+            "value": "149"
+          },
+          {
+            "selected": false,
+            "text": "Военторг",
+            "value": "155"
+          },
+          {
+            "selected": false,
+            "text": "Горького - Панфилова",
+            "value": "162"
+          },
+          {
+            "selected": false,
+            "text": "Дворец спорта",
+            "value": "127"
+          },
+          {
+            "selected": false,
+            "text": "Ден Сяопина - Фучика",
+            "value": "174"
+          },
+          {
+            "selected": false,
+            "text": "Достук",
+            "value": "99"
+          },
+          {
+            "selected": false,
+            "text": "Достук м-н",
+            "value": "23"
+          },
+          {
+            "selected": false,
+            "text": "Душанбинка",
+            "value": "124"
+          },
+          {
+            "selected": false,
+            "text": "ж/м Учкун-2 (Аэропорт)",
+            "value": "228"
+          },
+          {
+            "selected": false,
+            "text": "ЖД вокзал",
+            "value": "138"
+          },
+          {
+            "selected": false,
+            "text": "Западный автовокзал",
+            "value": "100"
+          },
+          {
+            "selected": true,
+            "text": "Золотой квадрат",
+            "value": "123"
+          },
+          {
+            "selected": false,
+            "text": "Калыс-Ордо 2",
+            "value": "230"
+          },
+          {
+            "selected": false,
+            "text": "Калыс-Ордо ж/м",
+            "value": "30"
+          },
+          {
+            "selected": false,
+            "text": "Касым ж/м",
+            "value": "25"
+          },
+          {
+            "selected": false,
+            "text": "Керемет ж/м",
+            "value": "72"
+          },
+          {
+            "selected": false,
+            "text": "КНУ",
+            "value": "171"
+          },
+          {
+            "selected": false,
+            "text": "Колмо ж/м",
+            "value": "26"
+          },
+          {
+            "selected": false,
+            "text": "Космос",
+            "value": "156"
+          },
+          {
+            "selected": false,
+            "text": "Кудайберген",
+            "value": "104"
+          },
+          {
+            "selected": false,
+            "text": "Маданият ж/м",
+            "value": "75"
+          },
+          {
+            "selected": false,
+            "text": "Манаса-Кудрука",
+            "value": "199"
+          },
+          {
+            "selected": false,
+            "text": "Махатма Ганди - БЧК",
+            "value": "196"
+          },
+          {
+            "selected": false,
+            "text": "Моссовет",
+            "value": "89"
+          },
+          {
+            "selected": false,
+            "text": "Мурас-Ордо ж/м",
+            "value": "31"
+          },
+          {
+            "selected": false,
+            "text": "Парк Панфилова/Спартак",
+            "value": "128"
+          },
+          {
+            "selected": false,
+            "text": "Площадь Победы",
+            "value": "148"
+          },
+          {
+            "selected": false,
+            "text": "Политех",
+            "value": "110"
+          },
+          {
+            "selected": false,
+            "text": "с. Дача СУ",
+            "value": "219"
+          },
+          {
+            "selected": false,
+            "text": "с. Достук",
+            "value": "209"
+          },
+          {
+            "selected": false,
+            "text": "с. Кернивоз",
+            "value": "232"
+          },
+          {
+            "selected": false,
+            "text": "с. Лесное",
+            "value": "231"
+          },
+          {
+            "selected": false,
+            "text": "с. Маевка",
+            "value": "106"
+          },
+          {
+            "selected": false,
+            "text": "с. Озёрное",
+            "value": "216"
+          },
+          {
+            "selected": false,
+            "text": "с. Пригородное",
+            "value": "201"
+          },
+          {
+            "selected": false,
+            "text": "с. Степное",
+            "value": "217"
+          },
+          {
+            "selected": false,
+            "text": "с. Учкун",
+            "value": "218"
+          },
+          {
+            "selected": false,
+            "text": "Салам-Алик ж/м",
+            "value": "76"
+          },
+          {
+            "selected": false,
+            "text": "Сквер Тоголок Молдо",
+            "value": "139"
+          },
+          {
+            "selected": false,
+            "text": "Тендик ж/м",
+            "value": "33"
+          },
+          {
+            "selected": false,
+            "text": "Тоголок Молдо - Щербакова",
+            "value": "195"
+          },
+          {
+            "selected": false,
+            "text": "Тоголок-Молдо - БЧК",
+            "value": "187"
+          },
+          {
+            "selected": false,
+            "text": "Тынчтык м-н",
+            "value": "237"
+          },
+          {
+            "selected": false,
+            "text": "Умут ж/м",
+            "value": "204"
+          },
+          {
+            "selected": false,
+            "text": "Хабитат ж/м",
+            "value": "70"
+          },
+          {
+            "selected": false,
+            "text": "Щербакова ж/м",
+            "value": "71"
+          },
+          {
+            "selected": false,
+            "text": "Юг-2 м-н",
+            "value": "24"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Бата ж/м",
+            "value": "39"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Жар ж/м",
+            "value": "61"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Тилек 2 ж/м",
+            "value": "62"
+          },
+          {
+            "selected": false,
+            "text": "Ак-Тилек ж/м",
+            "value": "41"
+          },
+          {
+            "selected": false,
+            "text": "Академия МВД",
+            "value": "193"
+          },
+          {
+            "selected": false,
+            "text": "Аламедин-1 м-н",
+            "value": "35"
+          },
+          {
+            "selected": false,
+            "text": "Аламединский рынок",
+            "value": "91"
+          },
+          {
+            "selected": false,
+            "text": "Бакай-Ата ж/м",
+            "value": "43"
+          },
+          {
+            "selected": false,
+            "text": "Восток-5 м-н",
+            "value": "36"
+          },
+          {
+            "selected": false,
+            "text": "Восточный автовокзал",
+            "value": "93"
+          },
+          {
+            "selected": false,
+            "text": "Гоин",
+            "value": "95"
+          },
+          {
+            "selected": false,
+            "text": "Городок строителей",
+            "value": "82"
+          },
+          {
+            "selected": false,
+            "text": "Городок энергетиков",
+            "value": "81"
+          },
+          {
+            "selected": false,
+            "text": "Дзержинского - Куренкеева",
+            "value": "184"
+          },
+          {
+            "selected": false,
+            "text": "Дордой 2 ж/м",
+            "value": "84"
+          },
+          {
+            "selected": false,
+            "text": "Дордой ж/м",
+            "value": "42"
+          },
+          {
+            "selected": false,
+            "text": "Дордой Плаза",
+            "value": "135"
+          },
+          {
+            "selected": false,
+            "text": "ж/м Биримдик Кут",
+            "value": "211"
+          },
+          {
+            "selected": false,
+            "text": "Жибек-Жолу - Лермонтова",
+            "value": "173"
+          },
+          {
+            "selected": false,
+            "text": "Кайынды ж/м",
+            "value": "79"
+          },
+          {
+            "selected": false,
+            "text": "Карагачевая роща",
+            "value": "229"
+          },
+          {
+            "selected": false,
+            "text": "Карпинка",
+            "value": "101"
+          },
+          {
+            "selected": false,
+            "text": "Келечек ж/м",
+            "value": "37"
+          },
+          {
+            "selected": false,
+            "text": "Керамическая ж/м",
+            "value": "78"
+          },
+          {
+            "selected": false,
+            "text": "Керченский ж/м",
+            "value": "83"
+          },
+          {
+            "selected": false,
+            "text": "Кожзавод",
+            "value": "191"
+          },
+          {
+            "selected": false,
+            "text": "Комфорт",
+            "value": "137"
+          },
+          {
+            "selected": false,
+            "text": "Красный Строитель 2 ж/м",
+            "value": "60"
+          },
+          {
+            "selected": false,
+            "text": "Красный Строитель ж/м",
+            "value": "34"
+          },
+          {
+            "selected": false,
+            "text": "Кузнечная крепость",
+            "value": "130"
+          },
+          {
+            "selected": false,
+            "text": "Лебединовка",
+            "value": "206"
+          },
+          {
+            "selected": false,
+            "text": "Мадина",
+            "value": "105"
+          },
+          {
+            "selected": false,
+            "text": "Нижний Токольдош",
+            "value": "170"
+          },
+          {
+            "selected": false,
+            "text": "Орозбекова - Жибек-Жолу",
+            "value": "172"
+          },
+          {
+            "selected": false,
+            "text": "с. Аламудун",
+            "value": "214"
+          },
+          {
+            "selected": false,
+            "text": "с. Восток",
+            "value": "213"
+          },
+          {
+            "selected": false,
+            "text": "с. Мыкан",
+            "value": "210"
+          },
+          {
+            "selected": false,
+            "text": "с. Нижняя Ала-Арча",
+            "value": "208"
+          },
+          {
+            "selected": false,
+            "text": "с. Садовое",
+            "value": "212"
+          },
+          {
+            "selected": false,
+            "text": "Советская - БЧК",
+            "value": "186"
+          },
+          {
+            "selected": false,
+            "text": "Советская - Куренкеева",
+            "value": "185"
+          },
+          {
+            "selected": false,
+            "text": "Советская - Щербакова",
+            "value": "189"
+          },
+          {
+            "selected": false,
+            "text": "Станционный",
+            "value": "215"
+          },
+          {
+            "selected": false,
+            "text": "Старый толчок",
+            "value": "160"
+          },
+          {
+            "selected": false,
+            "text": "Таатан",
+            "value": "112"
+          },
+          {
+            "selected": false,
+            "text": "Табачка",
+            "value": "188"
+          },
+          {
+            "selected": false,
+            "text": "Тоголок молдо- Куренкеева",
+            "value": "194"
+          },
+          {
+            "selected": false,
+            "text": "Туберкулезная больница",
+            "value": "198"
+          },
+          {
+            "selected": false,
+            "text": "ТЭЦ",
+            "value": "114"
+          },
+          {
+            "selected": false,
+            "text": "Учкун ж/м",
+            "value": "38"
+          },
+          {
+            "selected": false,
+            "text": "Учкун м-н",
+            "value": "67"
+          },
+          {
+            "selected": false,
+            "text": "Центральная мечеть",
+            "value": "129"
+          },
+          {
+            "selected": false,
+            "text": "Церковь",
+            "value": "117"
+          },
+          {
+            "selected": false,
+            "text": "Цирк/Дворец бракосочетания",
+            "value": "126"
+          },
+          {
+            "selected": false,
+            "text": "ЦУМ",
+            "value": "118"
+          },
+          {
+            "selected": false,
+            "text": "Чалбай ж/м",
+            "value": "80"
+          },
+          {
+            "selected": false,
+            "text": "Чуй - Алматинка",
+            "value": "169"
+          },
+          {
+            "selected": false,
+            "text": "Элебесова - Фере (Турбаза)",
+            "value": "190"
+          },
+          {
+            "selected": false,
+            "text": "Эне-Сай ж/м",
+            "value": "40"
+          },
+          {
+            "selected": false,
+            "text": "Юбилейк",
+            "value": "163а"
+          }
+        ],
+        "query": "market, 69-га : 177, Азия Молл : 122, Ак Кеме : 133, Ак-Орго ж/м : 57, Ак-Ордо 3 ж/м : 234, Ак-Ордо ж/м : 56, Академия Наук : 150, Ала-Тоо 3 ж-м : 238, Ала-Тоо м-н : 48, Арча-Бешик ж/м : 55, Баха : 166, БГУ : 92, Верхний Джал м-н : 44, Гагарина : 167, Госрегистр : 96, Джал 15 м-н : 86, Джал-23 м-н (Нижний Джал) : 66, Джал-29 м-н : 47, Джал-30 м-н : 63, Джальская больница : 164, ж/м Ала-Арча 2 : 176, Завод Кока-Кола : 180, Ипподром : 131, Калыка Акиева - Льва Толстого : 178, Киргизия 1 ж/м : 85, Киргизия-2 м-н : 50, Кызыл-Аскер ж/м : 87, Лущихина - Льва Толстого : 179, Молодая Гвардия : 144, Московская - Белинка : 165, Московская - Уметалиева : 168, Орок ж/м : 59, Ошский рынок : 109, Пишпек ж/м : 54, Рабочий Городок : 53, с. Верхний Орок : 202, с. Джал : 224, с. Калтар : 222, с. Кашка-Баш : 221, с. Нижний Орок : 203, с. Новопавловка : 200, с. Орто-Сай : 52, с. Сарбан : 223, с. Селекционное : 220, с. Чон-Арык : 51, СК. Тоо-Жели : 225, Средний Джал м-н : 45, Старый аэропорт : 132, Тенир-Тоо м-н : 49, Филармония : 116, Шлагбаум : 119, Ынтымак ж/м : 58, 10 м-н : 8, 11 м-н : 9, 12 м-н : 10, 3 м-н : 1, 4 м-н : 2, 5 м-н : 3, 6 м-н : 4, 7 м-н : 5, 8 м-н : 6, 9 м-н : 7, Айкол : 226, Ала-Арча 3 : 240, Ала-Арча ж/м : 175, Алматинка - Магистраль : 159, Алтын-Ордо ж/м : 22, Анар-Бак ж/м : 227, Асанбай м-н : 11, АУЦА : 141, Ахунбаева-Достоевского : 235, АЮ Grand : 90, Восточная Промзона : 192, Ген прокуратура : 158, Горького - Алма-Атинская : 182, Жилгородок Ницца : 69, Жилгородок Совмина ж/м : 21, Кара Дарыя : 157, Кара-Жыгач ж/м : 17, Карла Маркса : 151, КГУСТА : 102, Кок-Жар ж/м : 16, Кок-Жар м-н : 13, Кулатова- Матросова : 181, Магистраль : 145, Матросова : 152, Мед. академия : 107, Ортосайский рынок : 108, Оскон-Ордо ж/м : 207, Парк Ататюрк : 125, Полицейский городок м-н : 236, Проспект Айтматова : 239, Рухий Мурас ж/м : 20, с. Кок-Джар : 205, Советская - Скрябина : 161, Таш Рабат : 113, Токольдош ж/м : 18, Тунгуч 44 : 241, Тунгуч м-н : 12, Улан м-н : 14, Улан-2 м-н : 15, Учкун-2 ж/м : 19, Физкультурный : 154, Чокана Валиханова - Исакеева : 183, 1000 мелочей : 147, 110 квартал ж/м : 74, VEFA : 120, Ак Эмир рынок : 146, Ак-Босого ж/м : 32, Алтын-Бешик ж/м : 28, Алтын-Казык ж/м : 27, Аска-Таш ж/м : 29, Ата Журт : 233, Балбан-Таймаш ж/м : 73, Бишкек-Парк : 121, Боталиева - Тулебердиева : 197, Вечерка : 149, Военторг : 155, Горького - Панфилова : 162, Дворец спорта : 127, Ден Сяопина - Фучика : 174, Достук : 99, Достук м-н : 23, Душанбинка : 124, ж/м Учкун-2 (Аэропорт) : 228, ЖД вокзал : 138, Западный автовокзал : 100, Золотой квадрат : 123, Калыс-Ордо 2 : 230, Калыс-Ордо ж/м : 30, Касым ж/м : 25, Керемет ж/м : 72, КНУ : 171, Колмо ж/м : 26, Космос : 156, Кудайберген : 104, Маданият ж/м : 75, Манаса-Кудрука : 199, Махатма Ганди - БЧК : 196, Моссовет : 89, Мурас-Ордо ж/м : 31, Парк Панфилова/Спартак : 128, Площадь Победы : 148, Политех : 110, с. Дача СУ : 219, с. Достук : 209, с. Кернивоз : 232, с. Лесное : 231, с. Маевка : 106, с. Озёрное : 216, с. Пригородное : 201, с. Степное : 217, с. Учкун : 218, Салам-Алик ж/м : 76, Сквер Тоголок Молдо : 139, Тендик ж/м : 33, Тоголок Молдо - Щербакова : 195, Тоголок-Молдо - БЧК : 187, Тынчтык м-н : 237, Умут ж/м : 204, Хабитат ж/м : 70, Щербакова ж/м : 71, Юг-2 м-н : 24, Ак-Бата ж/м : 39, Ак-Жар ж/м : 61, Ак-Тилек 2 ж/м : 62, Ак-Тилек ж/м : 41, Академия МВД : 193, Аламедин-1 м-н : 35, Аламединский рынок : 91, Бакай-Ата ж/м : 43, Восток-5 м-н : 36, Восточный автовокзал : 93, Гоин : 95, Городок строителей : 82, Городок энергетиков : 81, Дзержинского - Куренкеева : 184, Дордой 2 ж/м : 84, Дордой ж/м : 42, Дордой Плаза : 135, ж/м Биримдик Кут : 211, Жибек-Жолу - Лермонтова : 173, Кайынды ж/м : 79, Карагачевая роща : 229, Карпинка : 101, Келечек ж/м : 37, Керамическая ж/м : 78, Керченский ж/м : 83, Кожзавод : 191, Комфорт : 137, Красный Строитель 2 ж/м : 60, Красный Строитель ж/м : 34, Кузнечная крепость : 130, Лебединовка : 206, Мадина : 105, Нижний Токольдош : 170, Орозбекова - Жибек-Жолу : 172, с. Аламудун : 214, с. Восток : 213, с. Мыкан : 210, с. Нижняя Ала-Арча : 208, с. Садовое : 212, Советская - БЧК : 186, Советская - Куренкеева : 185, Советская - Щербакова : 189, Станционный : 215, Старый толчок : 160, Таатан : 112, Табачка : 188, Тоголок молдо- Куренкеева : 194, Туберкулезная больница : 198, ТЭЦ : 114, Учкун ж/м : 38, Учкун м-н : 67, Центральная мечеть : 129, Церковь : 117, Цирк/Дворец бракосочетания : 126, ЦУМ : 118, Чалбай ж/м : 80, Чуй - Алматинка : 169, Элебесова - Фере (Турбаза) : 190, Эне-Сай ж/м : 40, Юбилейк : 163а",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "2025-05-24T17:25:20.611Z",
+    "to": "2025-05-26T01:06:18.164Z"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "12h",
+      "1d"
+    ]
+  },
+  "timezone": "browser",
+  "title": "market volume",
+  "uid": "den2gi8ofc7i8f",
+  "version": 19,
+  "weekStart": ""
+}

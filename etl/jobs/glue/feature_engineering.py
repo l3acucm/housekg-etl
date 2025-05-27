@@ -197,7 +197,7 @@ def update_scd2_table(*, key_field: T.StructField, parquet_path: str, compared_f
                     (F.col(f"current.{cf.name}").isNull()) |
                     (F.col(f"current.{cf.name}") == 0) |
                     (F.col(f"new.{cf.name}").isNull()),
-                    F.lit(100.0)  # 100% change
+                    F.lit(0)  # 100% change
                 ).otherwise(
                     ((F.col(f"new.{cf.name}") - F.col(f"current.{cf.name}")) /
                      F.col(f"current.{cf.name}") * 100.0)  # Calculate percentage change
