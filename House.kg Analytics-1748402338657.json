@@ -23,9 +23,8 @@
   "panels": [
     {
       "datasource": {
-        "default": false,
         "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
+        "uid": "fen7i6q8jyhhcd"
       },
       "fieldConfig": {
         "defaults": {
@@ -44,8 +43,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -75,7 +73,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "connectionArgs": {
@@ -99,9 +97,8 @@
     },
     {
       "datasource": {
-        "default": false,
         "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
+        "uid": "fen7i6q8jyhhcd"
       },
       "fieldConfig": {
         "defaults": {
@@ -120,8 +117,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -151,7 +147,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "connectionArgs": {
@@ -175,9 +171,8 @@
     },
     {
       "datasource": {
-        "default": false,
         "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
+        "uid": "fen7i6q8jyhhcd"
       },
       "fieldConfig": {
         "defaults": {
@@ -196,8 +191,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -246,7 +240,7 @@
           }
         ]
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "connectionArgs": {
@@ -271,9 +265,8 @@
     },
     {
       "datasource": {
-        "default": false,
         "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
+        "uid": "fen7i6q8jyhhcd"
       },
       "fieldConfig": {
         "defaults": {
@@ -318,8 +311,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -331,111 +323,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 5,
+        "w": 8,
         "x": 0,
-        "y": 16
-      },
-      "id": 4,
-      "maxDataPoints": 2,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "select effective_from, total_price_change FROM market_summary WHERE slug = '$district';",
-          "refId": "A"
-        }
-      ],
-      "title": "Market volume change",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "default": false,
-        "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
         "y": 16
       },
       "id": 1,
@@ -447,10 +337,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "connectionArgs": {
@@ -474,111 +366,8 @@
     },
     {
       "datasource": {
-        "default": false,
         "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 24
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "select effective_from, object_count_change FROM market_summary WHERE slug = '$district';",
-          "refId": "A"
-        }
-      ],
-      "title": "Market size change",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "default": false,
-        "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
+        "uid": "fen7i6q8jyhhcd"
       },
       "description": "Count of selling objects",
       "fieldConfig": {
@@ -624,8 +413,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -637,10 +425,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 16
       },
       "id": 2,
       "options": {
@@ -651,10 +439,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "connectionArgs": {
@@ -678,111 +468,8 @@
     },
     {
       "datasource": {
-        "default": false,
         "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 32
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "select effective_from, total_square_change FROM market_summary WHERE slug = '$district';",
-          "refId": "A"
-        }
-      ],
-      "title": "Market square change",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "default": false,
-        "type": "grafana-athena-datasource",
-        "uid": "ben2f8338veo0e"
+        "uid": "fen7i6q8jyhhcd"
       },
       "description": "Square of all selling objects",
       "fieldConfig": {
@@ -828,8 +515,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -841,10 +527,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 32
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 16
       },
       "id": 3,
       "options": {
@@ -855,10 +541,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "connectionArgs": {
@@ -879,27 +567,331 @@
       ],
       "title": "Market square",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-athena-datasource",
+        "uid": "fen7i6q8jyhhcd"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 21
+      },
+      "id": 4,
+      "maxDataPoints": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, total_price_change FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market volume change",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-athena-datasource",
+        "uid": "fen7i6q8jyhhcd"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 21
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, object_count_change FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market size change",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-athena-datasource",
+        "uid": "fen7i6q8jyhhcd"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 21
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, total_square_change FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market square change",
+      "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "",
-  "schemaVersion": 39,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "Золотой квадрат",
-          "value": "123"
+          "text": "market",
+          "value": "market"
         },
-        "hide": 0,
         "includeAll": false,
         "label": "District",
-        "multi": false,
         "name": "district",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "market",
             "value": "market"
           },
@@ -1539,7 +1531,7 @@
             "value": "100"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "Золотой квадрат",
             "value": "123"
           },
@@ -2020,15 +2012,13 @@
           }
         ],
         "query": "market, 69-га : 177, Азия Молл : 122, Ак Кеме : 133, Ак-Орго ж/м : 57, Ак-Ордо 3 ж/м : 234, Ак-Ордо ж/м : 56, Академия Наук : 150, Ала-Тоо 3 ж-м : 238, Ала-Тоо м-н : 48, Арча-Бешик ж/м : 55, Баха : 166, БГУ : 92, Верхний Джал м-н : 44, Гагарина : 167, Госрегистр : 96, Джал 15 м-н : 86, Джал-23 м-н (Нижний Джал) : 66, Джал-29 м-н : 47, Джал-30 м-н : 63, Джальская больница : 164, ж/м Ала-Арча 2 : 176, Завод Кока-Кола : 180, Ипподром : 131, Калыка Акиева - Льва Толстого : 178, Киргизия 1 ж/м : 85, Киргизия-2 м-н : 50, Кызыл-Аскер ж/м : 87, Лущихина - Льва Толстого : 179, Молодая Гвардия : 144, Московская - Белинка : 165, Московская - Уметалиева : 168, Орок ж/м : 59, Ошский рынок : 109, Пишпек ж/м : 54, Рабочий Городок : 53, с. Верхний Орок : 202, с. Джал : 224, с. Калтар : 222, с. Кашка-Баш : 221, с. Нижний Орок : 203, с. Новопавловка : 200, с. Орто-Сай : 52, с. Сарбан : 223, с. Селекционное : 220, с. Чон-Арык : 51, СК. Тоо-Жели : 225, Средний Джал м-н : 45, Старый аэропорт : 132, Тенир-Тоо м-н : 49, Филармония : 116, Шлагбаум : 119, Ынтымак ж/м : 58, 10 м-н : 8, 11 м-н : 9, 12 м-н : 10, 3 м-н : 1, 4 м-н : 2, 5 м-н : 3, 6 м-н : 4, 7 м-н : 5, 8 м-н : 6, 9 м-н : 7, Айкол : 226, Ала-Арча 3 : 240, Ала-Арча ж/м : 175, Алматинка - Магистраль : 159, Алтын-Ордо ж/м : 22, Анар-Бак ж/м : 227, Асанбай м-н : 11, АУЦА : 141, Ахунбаева-Достоевского : 235, АЮ Grand : 90, Восточная Промзона : 192, Ген прокуратура : 158, Горького - Алма-Атинская : 182, Жилгородок Ницца : 69, Жилгородок Совмина ж/м : 21, Кара Дарыя : 157, Кара-Жыгач ж/м : 17, Карла Маркса : 151, КГУСТА : 102, Кок-Жар ж/м : 16, Кок-Жар м-н : 13, Кулатова- Матросова : 181, Магистраль : 145, Матросова : 152, Мед. академия : 107, Ортосайский рынок : 108, Оскон-Ордо ж/м : 207, Парк Ататюрк : 125, Полицейский городок м-н : 236, Проспект Айтматова : 239, Рухий Мурас ж/м : 20, с. Кок-Джар : 205, Советская - Скрябина : 161, Таш Рабат : 113, Токольдош ж/м : 18, Тунгуч 44 : 241, Тунгуч м-н : 12, Улан м-н : 14, Улан-2 м-н : 15, Учкун-2 ж/м : 19, Физкультурный : 154, Чокана Валиханова - Исакеева : 183, 1000 мелочей : 147, 110 квартал ж/м : 74, VEFA : 120, Ак Эмир рынок : 146, Ак-Босого ж/м : 32, Алтын-Бешик ж/м : 28, Алтын-Казык ж/м : 27, Аска-Таш ж/м : 29, Ата Журт : 233, Балбан-Таймаш ж/м : 73, Бишкек-Парк : 121, Боталиева - Тулебердиева : 197, Вечерка : 149, Военторг : 155, Горького - Панфилова : 162, Дворец спорта : 127, Ден Сяопина - Фучика : 174, Достук : 99, Достук м-н : 23, Душанбинка : 124, ж/м Учкун-2 (Аэропорт) : 228, ЖД вокзал : 138, Западный автовокзал : 100, Золотой квадрат : 123, Калыс-Ордо 2 : 230, Калыс-Ордо ж/м : 30, Касым ж/м : 25, Керемет ж/м : 72, КНУ : 171, Колмо ж/м : 26, Космос : 156, Кудайберген : 104, Маданият ж/м : 75, Манаса-Кудрука : 199, Махатма Ганди - БЧК : 196, Моссовет : 89, Мурас-Ордо ж/м : 31, Парк Панфилова/Спартак : 128, Площадь Победы : 148, Политех : 110, с. Дача СУ : 219, с. Достук : 209, с. Кернивоз : 232, с. Лесное : 231, с. Маевка : 106, с. Озёрное : 216, с. Пригородное : 201, с. Степное : 217, с. Учкун : 218, Салам-Алик ж/м : 76, Сквер Тоголок Молдо : 139, Тендик ж/м : 33, Тоголок Молдо - Щербакова : 195, Тоголок-Молдо - БЧК : 187, Тынчтык м-н : 237, Умут ж/м : 204, Хабитат ж/м : 70, Щербакова ж/м : 71, Юг-2 м-н : 24, Ак-Бата ж/м : 39, Ак-Жар ж/м : 61, Ак-Тилек 2 ж/м : 62, Ак-Тилек ж/м : 41, Академия МВД : 193, Аламедин-1 м-н : 35, Аламединский рынок : 91, Бакай-Ата ж/м : 43, Восток-5 м-н : 36, Восточный автовокзал : 93, Гоин : 95, Городок строителей : 82, Городок энергетиков : 81, Дзержинского - Куренкеева : 184, Дордой 2 ж/м : 84, Дордой ж/м : 42, Дордой Плаза : 135, ж/м Биримдик Кут : 211, Жибек-Жолу - Лермонтова : 173, Кайынды ж/м : 79, Карагачевая роща : 229, Карпинка : 101, Келечек ж/м : 37, Керамическая ж/м : 78, Керченский ж/м : 83, Кожзавод : 191, Комфорт : 137, Красный Строитель 2 ж/м : 60, Красный Строитель ж/м : 34, Кузнечная крепость : 130, Лебединовка : 206, Мадина : 105, Нижний Токольдош : 170, Орозбекова - Жибек-Жолу : 172, с. Аламудун : 214, с. Восток : 213, с. Мыкан : 210, с. Нижняя Ала-Арча : 208, с. Садовое : 212, Советская - БЧК : 186, Советская - Куренкеева : 185, Советская - Щербакова : 189, Станционный : 215, Старый толчок : 160, Таатан : 112, Табачка : 188, Тоголок молдо- Куренкеева : 194, Туберкулезная больница : 198, ТЭЦ : 114, Учкун ж/м : 38, Учкун м-н : 67, Центральная мечеть : 129, Церковь : 117, Цирк/Дворец бракосочетания : 126, ЦУМ : 118, Чалбай ж/м : 80, Чуй - Алматинка : 169, Элебесова - Фере (Турбаза) : 190, Эне-Сай ж/м : 40, Юбилейк : 163а",
-        "queryValue": "",
-        "skipUrlSync": false,
         "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "2025-05-24T17:25:20.611Z",
-    "to": "2025-05-26T01:06:18.164Z"
+    "from": "2025-05-27T01:06:05.118Z",
+    "to": "2025-05-28T01:06:28.658Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -2037,8 +2027,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "market volume",
+  "title": "House.kg Analytics",
   "uid": "den2gi8ofc7i8f",
-  "version": 19,
-  "weekStart": ""
+  "version": 11
 }
