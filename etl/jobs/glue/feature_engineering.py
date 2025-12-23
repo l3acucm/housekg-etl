@@ -70,7 +70,7 @@ def get_cleaned_bronze_df():
         F.col('slug'),
         F.col('longitude'),
         F.col('latitude'),
-        F.col('prices')[1]['price'].alias('price'),
+        F.col('prices')[1]['m2_price'].alias('sqm_price'),
         F.col('square'),
         F.col('kitchen_square'),
         F.col('district'),
@@ -104,7 +104,6 @@ def get_cleaned_bronze_df():
             .withColumn("updated_at", F.current_timestamp())
             .dropDuplicates(["slug"])
             .alias("incoming")
-            .withColumn("sqm_price", F.col("price") / F.col("square"))
             .filter(F.col("sqm_price") > 300)
             .filter(F.col("sqm_price") < 2500)
             .filter(F.col("micro_district").isNotNull())
