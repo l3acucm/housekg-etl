@@ -7,9 +7,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "realty-etl-tf-backend"
+    bucket = "realty-etl-terraform-backend"
     key    = "mvp.tfstate"
-    region = "us-east-1"
+    region = "eu-central-1"
     dynamodb_table = "realty-etl-state-lock"
   }
 }

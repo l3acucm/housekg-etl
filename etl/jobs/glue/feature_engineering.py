@@ -73,6 +73,8 @@ def get_cleaned_bronze_df():
         F.col('prices')[1]['m2_price'].alias('sqm_price'),
         F.col('square'),
         F.col('kitchen_square'),
+        F.col('floor'),
+        F.col('floors'),
         F.col('district'),
         F.col('micro_district'),
         F.col('updated_at'),

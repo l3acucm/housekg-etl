@@ -18,6 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 0,
   "links": [],
   "panels": [
     {
@@ -38,147 +39,7 @@
             "footer": {
               "reducers": []
             },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 8,
-      "options": {
-        "cellHeight": "sm",
-        "showHeader": true
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "SELECT \nCONCAT('https://house.kg/details/', r.slug) AS url,\nf.sqm_price,\nf.sqm_price_change\nFROM realty_price_fact f\nJOIN realty_dim r ON f.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nAND f.is_current=true ORDER BY f.sqm_price_change",
-          "refId": "A"
-        }
-      ],
-      "title": "Losers",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "grafana-athena-datasource",
-        "uid": "af7y1i87qpybka"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "footer": {
-              "reducers": []
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 9,
-      "options": {
-        "cellHeight": "sm",
-        "showHeader": true
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "SELECT \nCONCAT('https://house.kg/details/', r.slug) AS url,\nf.sqm_price,\nf.sqm_price_change\nFROM realty_price_fact f\nJOIN realty_dim r ON f.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nAND f.is_current=true ORDER BY f.sqm_price_change DESC",
-          "refId": "A"
-        }
-      ],
-      "title": "Gainers",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "grafana-athena-datasource",
-        "uid": "af7y1i87qpybka"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "footer": {
-              "reducers": []
-            },
-            "inspect": false
+            "inspect": true
           },
           "mappings": [],
           "thresholds": {
@@ -199,7 +60,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "url"
+              "options": "slug"
             },
             "properties": [
               {
@@ -208,923 +69,13 @@
                   {
                     "targetBlank": true,
                     "title": "View Details",
-                    "url": "${__value.raw}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "micro_district"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "1": {
-                        "index": 56,
-                        "text": "3 м-н"
-                      },
-                      "2": {
-                        "index": 57,
-                        "text": "4 м-н"
-                      },
-                      "3": {
-                        "index": 58,
-                        "text": "5 м-н"
-                      },
-                      "4": {
-                        "index": 59,
-                        "text": "6 м-н"
-                      },
-                      "5": {
-                        "index": 60,
-                        "text": "7 м-н"
-                      },
-                      "6": {
-                        "index": 61,
-                        "text": "8 м-н"
-                      },
-                      "7": {
-                        "index": 62,
-                        "text": "9 м-н"
-                      },
-                      "8": {
-                        "index": 53,
-                        "text": "10 м-н"
-                      },
-                      "9": {
-                        "index": 54,
-                        "text": "11 м-н"
-                      },
-                      "10": {
-                        "index": 55,
-                        "text": "12 м-н"
-                      },
-                      "11": {
-                        "index": 69,
-                        "text": "Асанбай м-н"
-                      },
-                      "12": {
-                        "index": 99,
-                        "text": "Тунгуч м-н"
-                      },
-                      "13": {
-                        "index": 83,
-                        "text": "Кок-Жар м-н"
-                      },
-                      "14": {
-                        "index": 100,
-                        "text": "Улан м-н"
-                      },
-                      "15": {
-                        "index": 101,
-                        "text": "Улан-2 м-н"
-                      },
-                      "16": {
-                        "index": 82,
-                        "text": "Кок-Жар ж/м"
-                      },
-                      "17": {
-                        "index": 79,
-                        "text": "Кара-Жыгач ж/м"
-                      },
-                      "18": {
-                        "index": 97,
-                        "text": "Токольдош ж/м"
-                      },
-                      "19": {
-                        "index": 102,
-                        "text": "Учкун-2 ж/м"
-                      },
-                      "20": {
-                        "index": 93,
-                        "text": "Рухий Мурас ж/м"
-                      },
-                      "21": {
-                        "index": 77,
-                        "text": "Жилгородок Совмина ж/м"
-                      },
-                      "22": {
-                        "index": 67,
-                        "text": "Алтын-Ордо ж/м"
-                      },
-                      "23": {
-                        "index": 123,
-                        "text": "Достук м-н"
-                      },
-                      "24": {
-                        "index": 163,
-                        "text": "Юг-2 м-н"
-                      },
-                      "25": {
-                        "index": 131,
-                        "text": "Касым ж/м"
-                      },
-                      "26": {
-                        "index": 134,
-                        "text": "Колмо ж/м"
-                      },
-                      "27": {
-                        "index": 111,
-                        "text": "Алтын-Казык ж/м"
-                      },
-                      "28": {
-                        "index": 110,
-                        "text": "Алтын-Бешик ж/м"
-                      },
-                      "29": {
-                        "index": 112,
-                        "text": "Аска-Таш ж/м"
-                      },
-                      "30": {
-                        "index": 130,
-                        "text": "Калыс-Ордо ж/м"
-                      },
-                      "31": {
-                        "index": 141,
-                        "text": "Мурас-Ордо ж/м"
-                      },
-                      "32": {
-                        "index": 109,
-                        "text": "Ак-Босого ж/м"
-                      },
-                      "33": {
-                        "index": 156,
-                        "text": "Тендик ж/м"
-                      },
-                      "34": {
-                        "index": 192,
-                        "text": "Красный Строитель ж/м"
-                      },
-                      "35": {
-                        "index": 169,
-                        "text": "Аламедин-1 м-н"
-                      },
-                      "36": {
-                        "index": 172,
-                        "text": "Восток-5 м-н"
-                      },
-                      "37": {
-                        "index": 186,
-                        "text": "Келечек ж/м"
-                      },
-                      "38": {
-                        "index": 213,
-                        "text": "Учкун ж/м"
-                      },
-                      "39": {
-                        "index": 164,
-                        "text": "Ак-Бата ж/м"
-                      },
-                      "40": {
-                        "index": 222,
-                        "text": "Эне-Сай ж/м"
-                      },
-                      "41": {
-                        "index": 167,
-                        "text": "Ак-Тилек ж/м"
-                      },
-                      "42": {
-                        "index": 179,
-                        "text": "Дордой ж/м"
-                      },
-                      "43": {
-                        "index": 171,
-                        "text": "Бакай-Ата ж/м"
-                      },
-                      "44": {
-                        "index": 13,
-                        "text": "Верхний Джал м-н"
-                      },
-                      "45": {
-                        "index": 47,
-                        "text": "Средний Джал м-н"
-                      },
-                      "47": {
-                        "index": 18,
-                        "text": "Джал-29 м-н"
-                      },
-                      "48": {
-                        "index": 9,
-                        "text": "Ала-Тоо м-н"
-                      },
-                      "49": {
-                        "index": 49,
-                        "text": "Тенир-Тоо м-н"
-                      },
-                      "50": {
-                        "index": 26,
-                        "text": "Киргизия-2 м-н"
-                      },
-                      "51": {
-                        "index": 45,
-                        "text": "с. Чон-Арык"
-                      },
-                      "52": {
-                        "index": 42,
-                        "text": "с. Орто-Сай"
-                      },
-                      "53": {
-                        "index": 35,
-                        "text": "Рабочий Городок"
-                      },
-                      "54": {
-                        "index": 34,
-                        "text": "Пишпек ж/м"
-                      },
-                      "55": {
-                        "index": 10,
-                        "text": "Арча-Бешик ж/м"
-                      },
-                      "56": {
-                        "index": 6,
-                        "text": "Ак-Ордо ж/м"
-                      },
-                      "57": {
-                        "index": 4,
-                        "text": "Ак-Орго ж/м"
-                      },
-                      "58": {
-                        "index": 52,
-                        "text": "Ынтымак ж/м"
-                      },
-                      "59": {
-                        "index": 32,
-                        "text": "Орок ж/м"
-                      },
-                      "60": {
-                        "index": 191,
-                        "text": "Красный Строитель 2 ж/м"
-                      },
-                      "61": {
-                        "index": 165,
-                        "text": "Ак-Жар ж/м"
-                      },
-                      "62": {
-                        "index": 166,
-                        "text": "Ак-Тилек 2 ж/м"
-                      },
-                      "63": {
-                        "index": 19,
-                        "text": "Джал-30 м-н"
-                      },
-                      "66": {
-                        "index": 17,
-                        "text": "Джал-23 м-н (Нижний Джал)"
-                      },
-                      "67": {
-                        "index": 214,
-                        "text": "Учкун м-н"
-                      },
-                      "69": {
-                        "index": 76,
-                        "text": "Жилгородок Ницца"
-                      },
-                      "70": {
-                        "index": 161,
-                        "text": "Хабитат ж/м"
-                      },
-                      "71": {
-                        "index": 162,
-                        "text": "Щербакова ж/м"
-                      },
-                      "72": {
-                        "index": 132,
-                        "text": "Керемет ж/м"
-                      },
-                      "73": {
-                        "index": 114,
-                        "text": "Балбан-Таймаш ж/м"
-                      },
-                      "74": {
-                        "index": 106,
-                        "text": "110 квартал ж/м"
-                      },
-                      "75": {
-                        "index": 137,
-                        "text": "Маданият ж/м"
-                      },
-                      "76": {
-                        "index": 154,
-                        "text": "Салам-Алик ж/м"
-                      },
-                      "78": {
-                        "index": 187,
-                        "text": "Керамическая ж/м"
-                      },
-                      "79": {
-                        "index": 183,
-                        "text": "Кайынды ж/м"
-                      },
-                      "80": {
-                        "index": 219,
-                        "text": "Чалбай ж/м"
-                      },
-                      "81": {
-                        "index": 176,
-                        "text": "Городок энергетиков"
-                      },
-                      "82": {
-                        "index": 175,
-                        "text": "Городок строителей"
-                      },
-                      "83": {
-                        "index": 188,
-                        "text": "Керченский ж/м"
-                      },
-                      "84": {
-                        "index": 178,
-                        "text": "Дордой 2 ж/м"
-                      },
-                      "85": {
-                        "index": 25,
-                        "text": "Киргизия 1 ж/м"
-                      },
-                      "86": {
-                        "index": 16,
-                        "text": "Джал 15 м-н"
-                      },
-                      "87": {
-                        "index": 27,
-                        "text": "Кызыл-Аскер ж/м"
-                      },
-                      "89": {
-                        "index": 140,
-                        "text": "Моссовет"
-                      },
-                      "90": {
-                        "index": 72,
-                        "text": "АЮ Grand"
-                      },
-                      "91": {
-                        "index": 170,
-                        "text": "Аламединский рынок"
-                      },
-                      "92": {
-                        "index": 12,
-                        "text": "БГУ"
-                      },
-                      "93": {
-                        "index": 173,
-                        "text": "Восточный автовокзал"
-                      },
-                      "95": {
-                        "index": 174,
-                        "text": "Гоин"
-                      },
-                      "96": {
-                        "index": 15,
-                        "text": "Госрегистр"
-                      },
-                      "99": {
-                        "index": 122,
-                        "text": "Достук"
-                      },
-                      "100": {
-                        "index": 127,
-                        "text": "Западный автовокзал"
-                      },
-                      "101": {
-                        "index": 185,
-                        "text": "Карпинка"
-                      },
-                      "102": {
-                        "index": 81,
-                        "text": "КГУСТА"
-                      },
-                      "104": {
-                        "index": 136,
-                        "text": "Кудайберген"
-                      },
-                      "105": {
-                        "index": 195,
-                        "text": "Мадина"
-                      },
-                      "106": {
-                        "index": 149,
-                        "text": "с. Маевка"
-                      },
-                      "107": {
-                        "index": 87,
-                        "text": "Мед. академия"
-                      },
-                      "108": {
-                        "index": 88,
-                        "text": "Ортосайский рынок"
-                      },
-                      "109": {
-                        "index": 33,
-                        "text": "Ошский рынок"
-                      },
-                      "110": {
-                        "index": 144,
-                        "text": "Политех"
-                      },
-                      "112": {
-                        "index": 208,
-                        "text": "Таатан"
-                      },
-                      "113": {
-                        "index": 96,
-                        "text": "Таш Рабат"
-                      },
-                      "114": {
-                        "index": 212,
-                        "text": "ТЭЦ"
-                      },
-                      "116": {
-                        "index": 50,
-                        "text": "Филармония"
-                      },
-                      "117": {
-                        "index": 216,
-                        "text": "Церковь"
-                      },
-                      "118": {
-                        "index": 218,
-                        "text": "ЦУМ"
-                      },
-                      "119": {
-                        "index": 51,
-                        "text": "Шлагбаум"
-                      },
-                      "120": {
-                        "index": 107,
-                        "text": "VEFA"
-                      },
-                      "121": {
-                        "index": 115,
-                        "text": "Бишкек-Парк"
-                      },
-                      "122": {
-                        "index": 2,
-                        "text": "Азия Молл"
-                      },
-                      "123": {
-                        "index": 128,
-                        "text": "Золотой квадрат"
-                      },
-                      "124": {
-                        "index": 124,
-                        "text": "Душанбинка"
-                      },
-                      "125": {
-                        "index": 90,
-                        "text": "Парк Ататюрк"
-                      },
-                      "126": {
-                        "index": 217,
-                        "text": "Цирк/Дворец бракосочетания"
-                      },
-                      "127": {
-                        "index": 120,
-                        "text": "Дворец спорта"
-                      },
-                      "128": {
-                        "index": 142,
-                        "text": "Парк Панфилова/Спартак"
-                      },
-                      "129": {
-                        "index": 215,
-                        "text": "Центральная мечеть"
-                      },
-                      "130": {
-                        "index": 193,
-                        "text": "Кузнечная крепость"
-                      },
-                      "131": {
-                        "index": 23,
-                        "text": "Ипподром"
-                      },
-                      "132": {
-                        "index": 48,
-                        "text": "Старый аэропорт"
-                      },
-                      "133": {
-                        "index": 3,
-                        "text": "Ак Кеме"
-                      },
-                      "135": {
-                        "index": 180,
-                        "text": "Дордой Плаза"
-                      },
-                      "137": {
-                        "index": 190,
-                        "text": "Комфорт"
-                      },
-                      "138": {
-                        "index": 126,
-                        "text": "ЖД вокзал"
-                      },
-                      "139": {
-                        "index": 155,
-                        "text": "Сквер Тоголок Молдо"
-                      },
-                      "141": {
-                        "index": 70,
-                        "text": "АУЦА"
-                      },
-                      "144": {
-                        "index": 29,
-                        "text": "Молодая Гвардия"
-                      },
-                      "145": {
-                        "index": 85,
-                        "text": "Магистраль"
-                      },
-                      "146": {
-                        "index": 108,
-                        "text": "Ак Эмир рынок"
-                      },
-                      "147": {
-                        "index": 105,
-                        "text": "1000 мелочей"
-                      },
-                      "148": {
-                        "index": 143,
-                        "text": "Площадь Победы"
-                      },
-                      "149": {
-                        "index": 117,
-                        "text": "Вечерка"
-                      },
-                      "150": {
-                        "index": 7,
-                        "text": "Академия Наук"
-                      },
-                      "151": {
-                        "index": 80,
-                        "text": "Карла Маркса"
-                      },
-                      "152": {
-                        "index": 86,
-                        "text": "Матросова"
-                      },
-                      "154": {
-                        "index": 103,
-                        "text": "Физкультурный"
-                      },
-                      "155": {
-                        "index": 118,
-                        "text": "Военторг"
-                      },
-                      "156": {
-                        "index": 135,
-                        "text": "Космос"
-                      },
-                      "157": {
-                        "index": 78,
-                        "text": "Кара Дарыя"
-                      },
-                      "158": {
-                        "index": 74,
-                        "text": "Ген прокуратура"
-                      },
-                      "159": {
-                        "index": 66,
-                        "text": "Алматинка - Магистраль"
-                      },
-                      "160": {
-                        "index": 207,
-                        "text": "Старый толчок"
-                      },
-                      "161": {
-                        "index": 95,
-                        "text": "Советская - Скрябина"
-                      },
-                      "162": {
-                        "index": 119,
-                        "text": "Горького - Панфилова"
-                      },
-                      "164": {
-                        "index": 20,
-                        "text": "Джальская больница"
-                      },
-                      "165": {
-                        "index": 30,
-                        "text": "Московская - Белинка"
-                      },
-                      "166": {
-                        "index": 11,
-                        "text": "Баха"
-                      },
-                      "167": {
-                        "index": 14,
-                        "text": "Гагарина"
-                      },
-                      "168": {
-                        "index": 31,
-                        "text": "Московская - Уметалиева"
-                      },
-                      "169": {
-                        "index": 220,
-                        "text": "Чуй - Алматинка"
-                      },
-                      "170": {
-                        "index": 196,
-                        "text": "Нижний Токольдош"
-                      },
-                      "171": {
-                        "index": 133,
-                        "text": "КНУ"
-                      },
-                      "172": {
-                        "index": 197,
-                        "text": "Орозбекова - Жибек-Жолу"
-                      },
-                      "173": {
-                        "index": 182,
-                        "text": "Жибек-Жолу - Лермонтова"
-                      },
-                      "174": {
-                        "index": 121,
-                        "text": "Ден Сяопина - Фучика"
-                      },
-                      "175": {
-                        "index": 65,
-                        "text": "Ала-Арча ж/м"
-                      },
-                      "176": {
-                        "index": 21,
-                        "text": "ж/м Ала-Арча 2"
-                      },
-                      "177": {
-                        "index": 1,
-                        "text": "69-га"
-                      },
-                      "178": {
-                        "index": 24,
-                        "text": "Калыка Акиева - Льва Толстого"
-                      },
-                      "179": {
-                        "index": 28,
-                        "text": "Лущихина - Льва Толстого"
-                      },
-                      "180": {
-                        "index": 22,
-                        "text": "Завод Кока-Кола"
-                      },
-                      "181": {
-                        "index": 84,
-                        "text": "Кулатова- Матросова"
-                      },
-                      "182": {
-                        "index": 75,
-                        "text": "Горького - Алма-Атинская"
-                      },
-                      "183": {
-                        "index": 104,
-                        "text": "Чокана Валиханова - Исакеева"
-                      },
-                      "184": {
-                        "index": 177,
-                        "text": "Дзержинского - Куренкеева"
-                      },
-                      "185": {
-                        "index": 204,
-                        "text": "Советская - Куренкеева"
-                      },
-                      "186": {
-                        "index": 203,
-                        "text": "Советская - БЧК"
-                      },
-                      "187": {
-                        "index": 158,
-                        "text": "Тоголок-Молдо - БЧК"
-                      },
-                      "188": {
-                        "index": 209,
-                        "text": "Табачка"
-                      },
-                      "189": {
-                        "index": 205,
-                        "text": "Советская - Щербакова"
-                      },
-                      "190": {
-                        "index": 221,
-                        "text": "Элебесова - Фере (Турбаза)"
-                      },
-                      "191": {
-                        "index": 189,
-                        "text": "Кожзавод"
-                      },
-                      "192": {
-                        "index": 73,
-                        "text": "Восточная Промзона"
-                      },
-                      "193": {
-                        "index": 168,
-                        "text": "Академия МВД"
-                      },
-                      "194": {
-                        "index": 210,
-                        "text": "Тоголок молдо- Куренкеева"
-                      },
-                      "195": {
-                        "index": 157,
-                        "text": "Тоголок Молдо - Щербакова"
-                      },
-                      "196": {
-                        "index": 139,
-                        "text": "Махатма Ганди - БЧК"
-                      },
-                      "197": {
-                        "index": 116,
-                        "text": "Боталиева - Тулебердиева"
-                      },
-                      "198": {
-                        "index": 211,
-                        "text": "Туберкулезная больница"
-                      },
-                      "199": {
-                        "index": 138,
-                        "text": "Манаса-Кудрука"
-                      },
-                      "200": {
-                        "index": 41,
-                        "text": "с. Новопавловка"
-                      },
-                      "201": {
-                        "index": 151,
-                        "text": "с. Пригородное"
-                      },
-                      "202": {
-                        "index": 36,
-                        "text": "с. Верхний Орок"
-                      },
-                      "203": {
-                        "index": 40,
-                        "text": "с. Нижний Орок"
-                      },
-                      "204": {
-                        "index": 160,
-                        "text": "Умут ж/м"
-                      },
-                      "205": {
-                        "index": 94,
-                        "text": "с. Кок-Джар"
-                      },
-                      "206": {
-                        "index": 194,
-                        "text": "Лебединовка"
-                      },
-                      "207": {
-                        "index": 89,
-                        "text": "Оскон-Ордо ж/м"
-                      },
-                      "208": {
-                        "index": 201,
-                        "text": "с. Нижняя Ала-Арча"
-                      },
-                      "209": {
-                        "index": 146,
-                        "text": "с. Достук"
-                      },
-                      "210": {
-                        "index": 200,
-                        "text": "с. Мыкан"
-                      },
-                      "211": {
-                        "index": 181,
-                        "text": "ж/м Биримдик Кут"
-                      },
-                      "212": {
-                        "index": 202,
-                        "text": "с. Садовое"
-                      },
-                      "213": {
-                        "index": 199,
-                        "text": "с. Восток"
-                      },
-                      "214": {
-                        "index": 198,
-                        "text": "с. Аламудун"
-                      },
-                      "215": {
-                        "index": 206,
-                        "text": "Станционный"
-                      },
-                      "216": {
-                        "index": 150,
-                        "text": "с. Озёрное"
-                      },
-                      "217": {
-                        "index": 152,
-                        "text": "с. Степное"
-                      },
-                      "218": {
-                        "index": 153,
-                        "text": "с. Учкун"
-                      },
-                      "219": {
-                        "index": 145,
-                        "text": "с. Дача СУ"
-                      },
-                      "220": {
-                        "index": 44,
-                        "text": "с. Селекционное"
-                      },
-                      "221": {
-                        "index": 39,
-                        "text": "с. Кашка-Баш"
-                      },
-                      "222": {
-                        "index": 38,
-                        "text": "с. Калтар"
-                      },
-                      "223": {
-                        "index": 43,
-                        "text": "с. Сарбан"
-                      },
-                      "224": {
-                        "index": 37,
-                        "text": "с. Джал"
-                      },
-                      "225": {
-                        "index": 46,
-                        "text": "СК. Тоо-Жели"
-                      },
-                      "226": {
-                        "index": 63,
-                        "text": "Айкол"
-                      },
-                      "227": {
-                        "index": 68,
-                        "text": "Анар-Бак ж/м"
-                      },
-                      "228": {
-                        "index": 125,
-                        "text": "ж/м Учкун-2 (Аэропорт)"
-                      },
-                      "229": {
-                        "index": 184,
-                        "text": "Карагачевая роща"
-                      },
-                      "230": {
-                        "index": 129,
-                        "text": "Калыс-Ордо 2"
-                      },
-                      "231": {
-                        "index": 148,
-                        "text": "с. Лесное"
-                      },
-                      "232": {
-                        "index": 147,
-                        "text": "с. Кернивоз"
-                      },
-                      "233": {
-                        "index": 113,
-                        "text": "Ата Журт"
-                      },
-                      "234": {
-                        "index": 5,
-                        "text": "Ак-Ордо 3 ж/м"
-                      },
-                      "235": {
-                        "index": 71,
-                        "text": "Ахунбаева-Достоевского"
-                      },
-                      "236": {
-                        "index": 91,
-                        "text": "Полицейский городок м-н"
-                      },
-                      "237": {
-                        "index": 159,
-                        "text": "Тынчтык м-н"
-                      },
-                      "238": {
-                        "index": 8,
-                        "text": "Ала-Тоо 3 ж-м"
-                      },
-                      "239": {
-                        "index": 92,
-                        "text": "Проспект Айтматова"
-                      },
-                      "240": {
-                        "index": 64,
-                        "text": "Ала-Арча 3"
-                      },
-                      "241": {
-                        "index": 98,
-                        "text": "Тунгуч 44"
-                      },
-                      "Юбилейк ": {
-                        "index": 223,
-                        "text": "163а"
-                      }
-                    },
-                    "type": "value"
+                    "url": "https://house.kg/details/${__value.raw}"
                   }
                 ]
               },
               {
                 "id": "custom.width",
-                "value": 209
+                "value": 290
               }
             ]
           }
@@ -1134,13 +85,18 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 0
       },
       "id": 7,
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": []
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "fact_sqm_price (allValues)"
+          }
+        ]
       },
       "pluginVersion": "12.3.1",
       "targets": [
@@ -1157,7 +113,7 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "SELECT\nr.micro_district,\nCONCAT('https://house.kg/details/', p.slug) AS url, \nr.square,\nf.sqm_price * r.square as price,\nr.rooms,\nr.floor,\nr.floors,\np.sqm_price predicted_sqm_price,\nf.sqm_price fact_sqm_price,\nf.sqm_price/p.sqm_price AS ratio\nFROM (SELECT * FROM prediction_price_fact WHERE is_current=true) p JOIN (SELECT * FROM realty_price_fact WHERE is_current=true) f ON p.slug=f.slug JOIN realty_dim r ON p.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nORDER BY rooms ASC, price ASC;\n",
+          "rawSQL": "WITH aligned AS (\n  SELECT\n    r.slug,\n    r.micro_district,\n    r.square,\n    r.rooms,\n    r.floor,\n    r.floors,\n    DATE_TRUNC('day', COALESCE(f.effective_from, p.effective_from)) AS dt,\n    f.sqm_price              AS fact_sqm_price,\n    p.sqm_price              AS predicted_sqm_price,\n    f.sqm_price_change       AS sqm_price_change,\n    f.sqm_price / p.sqm_price AS ratio\n  FROM realty_dim r\n  LEFT JOIN realty_price_fact f\n    ON r.slug = f.slug\n  LEFT JOIN prediction_price_fact p\n    ON r.slug = p.slug\n   AND DATE_TRUNC('day', f.effective_from) = DATE_TRUNC('day', p.effective_from)\n)\nSELECT\n  slug,\n  micro_district,\n  square,\n  rooms,\n  floor,\n  floors,\n  dt,\n  ROUND(fact_sqm_price) AS fact_sqm_price,\n  ROUND(predicted_sqm_price) AS predicted_sqm_price,\n  ROUND(ratio, 2) AS ratio,\n  ROUND(sqm_price_change, 3) AS sqm_price_change\nFROM aligned\nORDER BY slug, dt;\n",
           "refId": "A",
           "table": "prediction_price_fact"
         }
@@ -1169,6 +125,61 @@
           "options": {
             "byField": "$district",
             "mode": "outerTabular"
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "fact_sqm_price": {
+                "aggregations": [
+                  "allValues"
+                ],
+                "operation": "aggregate"
+              },
+              "floor": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "floors": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "micro_district": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "predicted_sqm_price": {
+                "aggregations": [
+                  "allValues"
+                ],
+                "operation": "aggregate"
+              },
+              "ratio": {
+                "aggregations": [
+                  "allValues"
+                ],
+                "operation": "aggregate"
+              },
+              "rooms": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "slug": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "sqm_price_change": {
+                "aggregations": [
+                  "allValues"
+                ],
+                "operation": "aggregate"
+              },
+              "square": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
           }
         }
       ],
@@ -1239,7 +250,7 @@
         "h": 5,
         "w": 8,
         "x": 0,
-        "y": 16
+        "y": 8
       },
       "id": 1,
       "options": {
@@ -1343,7 +354,7 @@
         "h": 5,
         "w": 8,
         "x": 8,
-        "y": 16
+        "y": 8
       },
       "id": 2,
       "options": {
@@ -1447,7 +458,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 16
+        "y": 8
       },
       "id": 3,
       "options": {
@@ -1550,7 +561,7 @@
         "h": 5,
         "w": 8,
         "x": 0,
-        "y": 21
+        "y": 13
       },
       "id": 4,
       "maxDataPoints": 2,
@@ -1655,7 +666,7 @@
         "h": 5,
         "w": 8,
         "x": 8,
-        "y": 21
+        "y": 13
       },
       "id": 5,
       "options": {
@@ -1759,7 +770,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 21
+        "y": 13
       },
       "id": 6,
       "options": {
@@ -2940,8 +1951,8 @@
     ]
   },
   "time": {
-    "from": "now-7d",
-    "to": "now"
+    "from": "2025-12-27T22:21:48.069Z",
+    "to": "2025-12-29T09:29:50.543Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -2952,5 +1963,5 @@
   "timezone": "browser",
   "title": "House.kg Analytics",
   "uid": "den2gi8ofc7i8f",
-  "version": 27
+  "version": 41
 }
