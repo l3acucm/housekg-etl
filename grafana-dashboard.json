@@ -1013,7 +1013,12 @@
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": []
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "fact_price_change_product"
+          }
+        ]
       },
       "pluginVersion": "12.3.1",
       "targets": [
@@ -1030,7 +1035,7 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    p.slug AS slug,\n    r.square,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    ROUND(p.sqm_price) AS predicted_sqm_price,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM prediction_price_fact p\n  JOIN realty_price_fact f\n    ON p.slug = f.slug\n  JOIN realty_dim r\n    ON p.slug = r.slug\n  WHERE p.is_current = true\n    AND f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.micro_district,\n  c.slug,\n  c.square,\n  c.price,\n  c.rooms,\n  c.floor,\n  c.floors,\n  c.predicted_sqm_price,\n  c.fact_sqm_price,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  ROUND(c.fact_sqm_price / c.predicted_sqm_price, 2) AS ratio\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY fact_price_change_product ASC, ratio ASC;\n\n\n",
+          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    p.slug AS slug,\n    r.square,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    r.year,\n    ROUND(p.sqm_price) AS predicted_sqm_price,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM prediction_price_fact p\n  JOIN realty_price_fact f\n    ON p.slug = f.slug\n  JOIN realty_dim r\n    ON p.slug = r.slug\n  WHERE p.is_current = true\n    AND f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.micro_district,\n  c.slug,\n  c.square,\n  c.year,\n  c.price,\n  c.rooms,\n  c.floor,\n  c.floors,\n  c.predicted_sqm_price,\n  c.fact_sqm_price,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  ROUND(c.fact_sqm_price / c.predicted_sqm_price, 2) AS ratio\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY fact_price_change_product ASC, ratio ASC;\n\n\n",
           "refId": "A",
           "table": "prediction_price_fact"
         }
@@ -2813,8 +2818,8 @@
     ]
   },
   "time": {
-    "from": "2025-12-27T22:21:48.069Z",
-    "to": "2025-12-29T09:29:50.543Z"
+    "from": "now-30d",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -2825,5 +2830,5 @@
   "timezone": "browser",
   "title": "House.kg Analytics",
   "uid": "den2gi8ofc7i8f",
-  "version": 52
+  "version": 53
 }
