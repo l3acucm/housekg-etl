@@ -56,146 +56,6 @@
             ]
           }
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 8,
-      "options": {
-        "cellHeight": "sm",
-        "showHeader": true
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "SELECT \nCONCAT('https://house.kg/details/', r.slug) AS url,\nf.sqm_price,\nf.sqm_price_change\nFROM realty_price_fact f\nJOIN realty_dim r ON f.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nAND f.is_current=true ORDER BY f.sqm_price_change",
-          "refId": "A"
-        }
-      ],
-      "title": "Losers",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "grafana-athena-datasource",
-        "uid": "af7y1i87qpybka"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "footer": {
-              "reducers": []
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 9,
-      "options": {
-        "cellHeight": "sm",
-        "showHeader": true
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "SELECT \nCONCAT('https://house.kg/details/', r.slug) AS url,\nf.sqm_price,\nf.sqm_price_change\nFROM realty_price_fact f\nJOIN realty_dim r ON f.slug=r.slug \nWHERE \n(\n  TRY_CAST('$district' AS INTEGER) IS NULL \n  OR r.micro_district = CAST('$district' AS INTEGER)\n)\nAND f.is_current=true ORDER BY f.sqm_price_change DESC",
-          "refId": "A"
-        }
-      ],
-      "title": "Gainers",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "grafana-athena-datasource",
-        "uid": "af7y1i87qpybka"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "footer": {
-              "reducers": []
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
         "overrides": [
           {
             "matcher": {
@@ -1128,6 +988,18 @@
                 "value": 209
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_price_change_product"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 194
+              }
+            ]
           }
         ]
       },
@@ -1135,18 +1007,13 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 0
       },
       "id": 7,
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": [
-          {
-            "desc": false,
-            "displayName": "fact_price_change_product"
-          }
-        ]
+        "sortBy": []
       },
       "pluginVersion": "12.3.1",
       "targets": [
@@ -1245,7 +1112,7 @@
         "h": 5,
         "w": 8,
         "x": 0,
-        "y": 16
+        "y": 8
       },
       "id": 1,
       "options": {
@@ -1349,7 +1216,7 @@
         "h": 5,
         "w": 8,
         "x": 8,
-        "y": 16
+        "y": 8
       },
       "id": 2,
       "options": {
@@ -1453,7 +1320,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 16
+        "y": 8
       },
       "id": 3,
       "options": {
@@ -1556,7 +1423,7 @@
         "h": 5,
         "w": 8,
         "x": 0,
-        "y": 21
+        "y": 13
       },
       "id": 4,
       "maxDataPoints": 2,
@@ -1661,7 +1528,7 @@
         "h": 5,
         "w": 8,
         "x": 8,
-        "y": 21
+        "y": 13
       },
       "id": 5,
       "options": {
@@ -1765,7 +1632,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 21
+        "y": 13
       },
       "id": 6,
       "options": {
@@ -2958,5 +2825,5 @@
   "timezone": "browser",
   "title": "House.kg Analytics",
   "uid": "den2gi8ofc7i8f",
-  "version": 51
+  "version": 52
 }
