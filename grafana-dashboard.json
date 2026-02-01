@@ -1015,7 +1015,7 @@
         "showHeader": true,
         "sortBy": [
           {
-            "desc": true,
+            "desc": false,
             "displayName": "fact_price_change_product"
           }
         ]
@@ -1035,7 +1035,7 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    p.slug AS slug,\n    r.square,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    r.year,\n    ROUND(p.sqm_price) AS predicted_sqm_price,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM prediction_price_fact p\n  JOIN realty_price_fact f\n    ON p.slug = f.slug\n  JOIN realty_dim r\n    ON p.slug = r.slug\n  WHERE p.is_current = true\n    AND f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.micro_district,\n  c.slug,\n  c.square,\n  c.year,\n  c.price,\n  c.rooms,\n  c.floor,\n  c.floors,\n  c.predicted_sqm_price,\n  c.fact_sqm_price,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  ROUND(c.fact_sqm_price / c.predicted_sqm_price, 2) AS ratio\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY fact_price_change_product ASC, ratio ASC;\n\n\n",
+          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    p.slug AS slug,\n    r.square,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    r.year,\n    ROUND(p.sqm_price) AS predicted_sqm_price,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM prediction_price_fact p\n  JOIN realty_price_fact f\n    ON p.slug = f.slug\n  JOIN realty_dim r\n    ON p.slug = r.slug\n  WHERE p.is_current = true\n    AND f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.micro_district,\n  c.slug,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  ROUND(c.fact_sqm_price / c.predicted_sqm_price, 2) AS ratio,\n  ROUND(fact_price_change_product * ROUND(c.fact_sqm_price / c.predicted_sqm_price, 2), 2) AS metrics_product,\n  c.fact_sqm_price,\n  c.predicted_sqm_price,\n  c.square,\n  c.year,\n  c.price,\n  c.rooms,\n  c.floor,\n  c.floors\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY metrics_product ASC;\n\n\n",
           "refId": "A",
           "table": "prediction_price_fact"
         }
@@ -1115,7 +1115,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 8
       },
@@ -1160,7 +1160,6 @@
         "type": "grafana-athena-datasource",
         "uid": "af7y1i87qpybka"
       },
-      "description": "Count of selling objects",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1219,11 +1218,12 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
-        "x": 8,
+        "w": 12,
+        "x": 12,
         "y": 8
       },
-      "id": 2,
+      "id": 4,
+      "maxDataPoints": 2,
       "options": {
         "legend": {
           "calcs": [],
@@ -1252,11 +1252,11 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "select effective_from, object_count FROM market_summary WHERE slug = '$district';",
+          "rawSQL": "select effective_from, total_price_change, total_square_change, object_count_change FROM market_summary WHERE slug = '$district';",
           "refId": "A"
         }
       ],
-      "title": "Market size",
+      "title": "Market metric changes",
       "type": "timeseries"
     },
     {
@@ -1323,9 +1323,9 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
-        "x": 16,
-        "y": 8
+        "w": 12,
+        "x": 0,
+        "y": 13
       },
       "id": 3,
       "options": {
@@ -1368,110 +1368,6 @@
         "type": "grafana-athena-datasource",
         "uid": "af7y1i87qpybka"
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 0,
-        "y": 13
-      },
-      "id": 4,
-      "maxDataPoints": 2,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "select effective_from, total_price_change FROM market_summary WHERE slug = '$district';",
-          "refId": "A"
-        }
-      ],
-      "title": "Market volume change",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-athena-datasource",
-        "uid": "af7y1i87qpybka"
-      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -1531,112 +1427,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
-        "x": 8,
-        "y": 13
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "connectionArgs": {
-            "catalog": "__default",
-            "database": "__default",
-            "region": "__default",
-            "resultReuseEnabled": false,
-            "resultReuseMaxAgeInMinutes": 60
-          },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
-          "format": 1,
-          "rawSQL": "select effective_from, object_count_change FROM market_summary WHERE slug = '$district';",
-          "refId": "A"
-        }
-      ],
-      "title": "Market size change",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-athena-datasource",
-        "uid": "af7y1i87qpybka"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 16,
+        "w": 12,
+        "x": 12,
         "y": 13
       },
       "id": 6,
@@ -1668,11 +1460,115 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "select effective_from, total_square_change FROM market_summary WHERE slug = '$district';",
+          "rawSQL": "select effective_from, total_price/total_square as sqm_price FROM market_summary WHERE slug = '$district';",
           "refId": "A"
         }
       ],
-      "title": "Market square change",
+      "title": "sqm price",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-athena-datasource",
+        "uid": "af7y1i87qpybka"
+      },
+      "description": "Count of selling objects",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "__default",
+            "database": "__default",
+            "region": "__default",
+            "resultReuseEnabled": false,
+            "resultReuseMaxAgeInMinutes": 60
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "ben2f8338veo0e"
+          },
+          "format": 1,
+          "rawSQL": "select effective_from, object_count FROM market_summary WHERE slug = '$district';",
+          "refId": "A"
+        }
+      ],
+      "title": "Market size",
       "type": "timeseries"
     }
   ],
@@ -2808,7 +2704,7 @@
           },
           {
             "selected": false,
-            "text": "Юбилейк",
+            "text": "Юбилейка",
             "value": "163а"
           }
         ],
@@ -2830,5 +2726,5 @@
   "timezone": "browser",
   "title": "House.kg Analytics",
   "uid": "den2gi8ofc7i8f",
-  "version": 53
+  "version": 62
 }
