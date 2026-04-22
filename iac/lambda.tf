@@ -22,8 +22,11 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
     Statement = [
       {
         Action = ["s3:PutObject"],
-        Effect   = "Allow",
-        Resource = "${aws_s3_bucket.data_bucket.arn}/${var.ingestions_dir}/*"
+        Effect = "Allow",
+        Resource = [
+          "${aws_s3_bucket.data_bucket.arn}/ingestions_apartments/*",
+          "${aws_s3_bucket.data_bucket.arn}/ingestions_plots/*"
+        ]
       },
       {
         Effect = "Allow"
@@ -71,6 +74,25 @@ resource "aws_lambda_layer_version" "requests_layer" {
   layer_name = "requests"
   source_code_hash = filebase64sha256("artifacts/requests_layer.zip")
   compatible_runtimes = ["python3.10"]
+}
+
+resource "aws_lambda_function" "plots_ingestion_lambda" {
+  function_name = "plots_ingestion_lambda"
+  filename      = "artifacts/plots_ingestion_lambda.zip"
+  handler       = "main.handler"
+  memory_size   = 512
+  runtime       = "python3.10"
+  role          = aws_iam_role.lambda_role.arn
+  source_code_hash = filebase64sha256("artifacts/plots_ingestion_lambda.zip")
+  layers        = [aws_lambda_layer_version.requests_layer.arn]
+  timeout       = 60
+  environment {
+    variables = {
+      BUCKET_NAME      = var.s3_bucket
+      FILE_NAME_PREFIX = "plots"
+      CRAWLER_NAME     = "plots_ingestions_crawler"
+    }
+  }
 }
 
 #######################

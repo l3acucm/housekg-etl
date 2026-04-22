@@ -4,116 +4,202 @@ resource "aws_sfn_state_machine" "data_processing_workflow" {
 
   definition = <<EOF
 {
-  "Comment": "Data Processing Workflow",
-  "StartAt": "IngestData",
+  "Comment": "Data Processing Workflow — apartments and plots in parallel",
+  "StartAt": "RunBothPipelines",
   "States": {
-    "IngestData": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "OutputPath": "$.Payload",
-      "Parameters": {
-        "FunctionName": "${aws_lambda_function.ingestion_lambda.function_name}",
-        "Payload.$": "$"
-      },
-      "Next": "RunGlueCrawler"
-    },
-    "RunGlueCrawler": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
-      "Parameters": {
-        "Name": "${aws_glue_crawler.housekg_ingestions_crawler.name}"
-      },
-      "Next": "WaitForCrawler"
-    },
-    "WaitForCrawler": {
-      "Type": "Wait",
-      "Seconds": 60,
-      "Next": "CheckCrawlerStatus"
-    },
-    "CheckCrawlerStatus": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
-      "Parameters": {
-        "Name": "${aws_glue_crawler.housekg_ingestions_crawler.name}"
-      },
-      "Next": "CrawlerStatusChoice"
-    },
-    "CrawlerStatusChoice": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.Crawler.State",
-          "StringEquals": "RUNNING",
-          "Next": "WaitForCrawler"
-        }
-      ],
-      "Default": "StartGlueJob"
-    },
-    "StartGlueJob": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::glue:startJobRun.sync",
-      "Parameters": {
-        "JobName": "${aws_glue_job.feature_engineering.name}"
-      },
-      "Next": "RunFinalCrawlers"
-    },
-    "RunFinalCrawlers": {
+    "RunBothPipelines": {
       "Type": "Parallel",
+      "End": true,
       "Branches": [
         {
-          "StartAt": "RunRealtyDimCrawler",
+          "StartAt": "IngestApartments",
           "States": {
-            "RunRealtyDimCrawler": {
+            "IngestApartments": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${aws_lambda_function.ingestion_lambda.function_name}",
+                "Payload.$": "$"
+              },
+              "Next": "RunApartmentsIngestionCrawler"
+            },
+            "RunApartmentsIngestionCrawler": {
               "Type": "Task",
               "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
               "Parameters": {
-                "Name": "realty_dim"
+                "Name": "${aws_glue_crawler.housekg_ingestions_crawler.name}"
               },
-              "End": true
+              "Next": "WaitApartmentsCrawler"
+            },
+            "WaitApartmentsCrawler": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "CheckApartmentsCrawler"
+            },
+            "CheckApartmentsCrawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+              "Parameters": {
+                "Name": "${aws_glue_crawler.housekg_ingestions_crawler.name}"
+              },
+              "Next": "ApartmentsCrawlerStatusChoice"
+            },
+            "ApartmentsCrawlerStatusChoice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Crawler.State",
+                  "StringEquals": "RUNNING",
+                  "Next": "WaitApartmentsCrawler"
+                }
+              ],
+              "Default": "StartApartmentsGlueJob"
+            },
+            "StartApartmentsGlueJob": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "${aws_glue_job.feature_engineering.name}"
+              },
+              "Next": "RunApartmentsFinalCrawlers"
+            },
+            "RunApartmentsFinalCrawlers": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [
+                {
+                  "StartAt": "RunRealtyDimCrawler",
+                  "States": {
+                    "RunRealtyDimCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "realty_dim"},
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "RunPriceFactCrawler",
+                  "States": {
+                    "RunPriceFactCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "price_fact"},
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "RunMarketSummaryCrawler",
+                  "States": {
+                    "RunMarketSummaryCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "market_summary"},
+                      "End": true
+                    }
+                  }
+                }
+              ]
             }
           }
         },
         {
-          "StartAt": "RunPriceFactCrawler",
+          "StartAt": "IngestPlots",
           "States": {
-            "RunPriceFactCrawler": {
+            "IngestPlots": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${aws_lambda_function.plots_ingestion_lambda.function_name}",
+                "Payload.$": "$"
+              },
+              "Next": "RunPlotsIngestionCrawler"
+            },
+            "RunPlotsIngestionCrawler": {
               "Type": "Task",
               "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
               "Parameters": {
-                "Name": "price_fact"
+                "Name": "${aws_glue_crawler.plots_ingestions_crawler.name}"
               },
-              "End": true
-            }
-          }
-        },
-        {
-          "StartAt": "RunPredictionFactCrawler",
-          "States": {
-            "RunPredictionFactCrawler": {
+              "Next": "WaitPlotsCrawler"
+            },
+            "WaitPlotsCrawler": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "CheckPlotsCrawler"
+            },
+            "CheckPlotsCrawler": {
               "Type": "Task",
-              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
               "Parameters": {
-                "Name": "prediction_fact"
+                "Name": "${aws_glue_crawler.plots_ingestions_crawler.name}"
               },
-              "End": true
-            }
-          }
-        },
-        {
-          "StartAt": "RunMarketSummaryCrawler",
-          "States": {
-            "RunMarketSummaryCrawler": {
+              "Next": "PlotsCrawlerStatusChoice"
+            },
+            "PlotsCrawlerStatusChoice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Crawler.State",
+                  "StringEquals": "RUNNING",
+                  "Next": "WaitPlotsCrawler"
+                }
+              ],
+              "Default": "StartPlotsGlueJob"
+            },
+            "StartPlotsGlueJob": {
               "Type": "Task",
-              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
               "Parameters": {
-                "Name": "market_summary"
+                "JobName": "${aws_glue_job.plots_feature_engineering.name}"
               },
-              "End": true
+              "Next": "RunPlotsFinalCrawlers"
+            },
+            "RunPlotsFinalCrawlers": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [
+                {
+                  "StartAt": "RunPlotsDimCrawler",
+                  "States": {
+                    "RunPlotsDimCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "plots_dim"},
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "RunPlotsPriceFactCrawler",
+                  "States": {
+                    "RunPlotsPriceFactCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "plots_price_fact"},
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "RunPlotsMarketSummaryCrawler",
+                  "States": {
+                    "RunPlotsMarketSummaryCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "plots_market_summary"},
+                      "End": true
+                    }
+                  }
+                }
+              ]
             }
           }
         }
-      ],
-      "End": true
+      ]
     }
   }
 }
@@ -193,8 +279,11 @@ resource "aws_iam_role_policy" "step_function_policy" {
         Action = [
           "lambda:InvokeFunction"
         ],
-        Effect   = "Allow",
-        Resource = aws_lambda_function.ingestion_lambda.arn
+        Effect = "Allow",
+        Resource = [
+          aws_lambda_function.ingestion_lambda.arn,
+          aws_lambda_function.plots_ingestion_lambda.arn
+        ]
       },
       {
         Action = [

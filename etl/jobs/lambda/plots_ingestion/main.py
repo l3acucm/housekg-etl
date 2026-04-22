@@ -5,36 +5,30 @@ from datetime import datetime
 import os
 import logging
 
-# Set up logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
 def handler(event, context):
-    # Initialize AWS clients
     s3 = boto3.client("s3")
     glue_client = boto3.client('glue')
 
-    # Configuration
     bucket_name = os.environ.get("BUCKET_NAME", "unset_bucket_name_var")
     crawler_name = os.environ.get("CRAWLER_NAME", "unset_crawler_name_var")
     file_name_prefix = os.environ.get("FILE_NAME_PREFIX", "unset_file_name_var")
-    url = "https://www.house.kg/search-map?lat1=42.718768102606326&lon1=74.36988830566408&lat2=42.90765713919232&lon2=74.72694396972658&filter=%7B%22type_id%22%3A%7B%22operator%22%3A%22in%22%2C%22value%22%3A%5B%221%22%5D%7D%2C%22category%22%3A%7B%22operator%22%3A%22%3D%22%2C%22value%22%3A%221%22%7D%2C%22document%22%3A%7B%22operator%22%3A%22in%22%2C%22value%22%3A%5B%224%22%5D%7D%7D&disable_groups=1&offset=0&page=1&mobile_view=0"
+    url = "https://www.house.kg/search-map?lat1=42.76869085401422&lon1=74.4261932373047&lat2=42.95742757637941&lon2=74.7832489013672&filter=%7B%22type_id%22%3A%7B%22operator%22%3A%22in%22%2C%22value%22%3A%5B%221%22%5D%7D%2C%22category%22%3A%7B%22operator%22%3A%22%3D%22%2C%22value%22%3A%225%22%7D%2C%22region%22%3A%7B%22operator%22%3A%22%3D%22%2C%22value%22%3A%221%22%7D%2C%22document%22%3A%7B%22operator%22%3A%22in%22%2C%22value%22%3A%5B%221%22%2C%222%22%2C%226%22%2C%228%22%5D%7D%7D&disable_groups=1&offset=0&page=1&mobile_view=0"
     headers = {'X-Requested-With': 'XMLHttpRequest'}
     timestamp = datetime.now().strftime("%d%m%Y")
     file_name = f"{file_name_prefix}-{timestamp}.json"
-    file_key = f"ingestions_apartments/{file_name}"
+    file_key = f"ingestions_plots/{file_name}"
 
     try:
-        # Fetch data from API
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         data = response.json()['list']
 
-        # Compress JSON data with gzip
         json_data = json.dumps(data).encode('utf-8')
 
-        # Store compressed data in S3
         s3.put_object(
             Bucket=bucket_name,
             Key=file_key,
@@ -50,7 +44,7 @@ def handler(event, context):
         )
         return {
             "statusCode": 200,
-            "body": json.dumps({"message": "Data ingested and crawler triggered"})
+            "body": json.dumps({"message": "Plots data ingested and crawler retargeted"})
         }
 
     except requests.RequestException as e:

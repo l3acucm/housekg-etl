@@ -38,6 +38,9 @@
             "footer": {
               "reducers": []
             },
+            "hideFrom": {
+              "viz": false
+            },
             "inspect": false
           },
           "mappings": [],
@@ -66,7 +69,6 @@
                 "id": "links",
                 "value": [
                   {
-                    "targetBlank": true,
                     "title": "View Details",
                     "url": "https://house.kg/details/${__value.raw}"
                   }
@@ -991,19 +993,57 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "fact_price_change_product"
+              "options": "document"
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 194
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "1": {
+                        "index": 0,
+                        "text": "weqwe"
+                      },
+                      "2": {
+                        "index": 1,
+                        "text": "qwe"
+                      },
+                      "3": {
+                        "index": 2,
+                        "text": "asd"
+                      },
+                      "4": {
+                        "index": 3,
+                        "text": "asr"
+                      },
+                      "5": {
+                        "index": 4,
+                        "text": "zxc"
+                      },
+                      "6": {
+                        "index": 5,
+                        "text": "as"
+                      },
+                      "7": {
+                        "index": 6,
+                        "text": "dfr"
+                      },
+                      "8": {
+                        "index": 7,
+                        "text": "erfre"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 24,
         "x": 0,
         "y": 0
@@ -1015,7 +1055,7 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "year"
+            "displayName": "document"
           }
         ]
       },
@@ -1029,14 +1069,9 @@
             "resultReuseEnabled": false,
             "resultReuseMaxAgeInMinutes": 60
           },
-          "datasource": {
-            "type": "grafana-athena-datasource",
-            "uid": "ben2f8338veo0e"
-          },
           "format": 1,
-          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    r.slug AS slug,\n    r.square,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    r.year,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM realty_price_fact f\n  JOIN realty_dim r\n    ON f.slug = r.slug\n  WHERE f.is_current = true\n    AND f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.year,\n  c.micro_district,\n  c.slug,\n  c.square,\n  c.fact_sqm_price,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  c.price,\n  c.rooms,\n  c.floor,\n  c.floors\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;\n\n\n",
-          "refId": "A",
-          "table": "prediction_price_fact"
+          "rawSQL": "WITH change_product AS (\n    SELECT\n        r.slug,\n        EXP(\n            SUM(\n                LN(NULLIF(1 + f.are_price_change, 0))\n            )\n        ) AS fact_price_change_product\n    FROM plots_dim r\n    JOIN plots_price_fact f\n        ON r.slug = f.slug\n    WHERE f.are_price_change IS NOT NULL\n    GROUP BY r.slug\n),\ncurrent AS (\n    SELECT\n        r.micro_district,\n        r.slug AS slug,\n        r.land_square,\n        f.are_price * r.land_square AS price,\n        -- map integer array -> string array\n        TRANSFORM(\n            r.document,\n            d -> CASE d\n                WHEN 1 THEN 'Договор купли-продажи'\n                WHEN 2 THEN 'Договор дарения'\n                WHEN 3 THEN 'Договор долевого участия'\n                WHEN 4 THEN 'Технический паспорт'\n                WHEN 5 THEN 'Акт ввода в эксплуатацию'\n                WHEN 6 THEN 'Красная книга'\n                WHEN 7 THEN 'Зелёная книга'\n                WHEN 8 THEN 'Свидетельство о праве на наследство'\n                ELSE CAST(d AS VARCHAR)\n            END\n        ) AS document,\n        ROUND(f.are_price) AS fact_are_price\n    FROM plots_price_fact f\n    JOIN plots_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = true\n        AND (\n            TRY_CAST('$district' AS INTEGER) IS NULL\n            OR r.micro_district = CAST('$district' AS INTEGER)\n        )\n)\nSELECT\n    c.micro_district,\n    c.slug,\n    c.land_square,\n    c.fact_are_price,\n    ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n    c.price,\n    c.document\nFROM current c\nLEFT JOIN change_product cp\n    ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;",
+          "refId": "A"
         }
       ],
       "title": "Underestimated",
@@ -1044,7 +1079,7 @@
         {
           "id": "joinByField",
           "options": {
-            "byField": "$district",
+            "byField": "micro_district",
             "mode": "outerTabular"
           }
         }
@@ -1116,7 +1151,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 9
       },
       "id": 1,
       "options": {
@@ -1147,11 +1182,11 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "select effective_from, total_price FROM market_summary WHERE slug = '$district';",
+          "rawSQL": "select effective_from, total_price FROM plots_market_summary WHERE slug = '$district';",
           "refId": "A"
         }
       ],
-      "title": "Market volume",
+      "title": "Land market volume (total USD value)",
       "type": "timeseries"
     },
     {
@@ -1219,7 +1254,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 9
       },
       "id": 4,
       "maxDataPoints": 2,
@@ -1251,7 +1286,7 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "select effective_from, total_price_change, total_square_change, object_count_change FROM market_summary WHERE slug = '$district';",
+          "rawSQL": "select effective_from, total_price_change, total_land_square_change, object_count_change FROM plots_market_summary WHERE slug = '$district';",
           "refId": "A"
         }
       ],
@@ -1324,7 +1359,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 14
       },
       "id": 3,
       "options": {
@@ -1355,11 +1390,11 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "select effective_from, total_square FROM market_summary WHERE slug = '$district';",
+          "rawSQL": "select effective_from, total_land_square FROM plots_market_summary WHERE slug = '$district';",
           "refId": "A"
         }
       ],
-      "title": "Market square",
+      "title": "Total land area (ares)",
       "type": "timeseries"
     },
     {
@@ -1427,7 +1462,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 14
       },
       "id": 6,
       "options": {
@@ -1458,11 +1493,11 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "select effective_from, total_price/total_square as sqm_price FROM market_summary WHERE slug = '$district';",
+          "rawSQL": "select effective_from, total_price/total_land_square as are_price FROM plots_market_summary WHERE slug = '$district';",
           "refId": "A"
         }
       ],
-      "title": "sqm price",
+      "title": "Average are price (USD)",
       "type": "timeseries"
     },
     {
@@ -1531,7 +1566,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 19
       },
       "id": 2,
       "options": {
@@ -1562,11 +1597,11 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "select effective_from, object_count FROM market_summary WHERE slug = '$district';",
+          "rawSQL": "select effective_from, object_count FROM plots_market_summary WHERE slug = '$district';",
           "refId": "A"
         }
       ],
-      "title": "Market size",
+      "title": "Active plot count",
       "type": "timeseries"
     }
   ],
@@ -1602,8 +1637,8 @@
     ]
   },
   "timezone": "browser",
-  "title": "Apartments",
-  "uid": "den2gi8ofc7i8f",
-  "version": 14,
+  "title": "Plots",
+  "uid": "housekg-plots",
+  "version": 13,
   "weekStart": ""
 }

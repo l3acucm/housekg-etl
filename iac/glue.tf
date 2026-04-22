@@ -167,7 +167,7 @@ resource "aws_glue_crawler" "housekg_ingestions_crawler" {
   classifiers = [aws_glue_classifier.housekg_json_classifier.name]
 
   s3_target {
-    path = "s3://${aws_s3_bucket.data_bucket.bucket}/ingestions/"
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/ingestions_apartments/"
   }
 
   configuration = jsonencode({
@@ -210,8 +210,6 @@ resource "aws_glue_job" "feature_engineering" {
     "--enable-metrics" = "true" # Enable metrics for job profiling
     "--enable-continuous-cloudwatch-log" = "true" # Enable continuous logging
     "--spark-event-logs-path"           = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/feature-engineering/spark-logs/"
-    "--additional-python-modules"       = "torch==2.0.1,scikit-learn==1.5.2"
-    "--python-modules-installer-option" = "--extra-index-url https://download.pytorch.org/whl/cpu"
   }
 
   execution_property {
@@ -259,13 +257,13 @@ resource "aws_glue_crawler" "realty_dim" {
     }
   })
 }
-resource "aws_glue_crawler" "prediction_fact" {
-  name          = "prediction_fact"
+resource "aws_glue_crawler" "market_summary" {
+  name          = "market_summary"
   role          = aws_iam_role.glue_crawler_role.arn
   database_name = aws_glue_catalog_database.data_db.name
 
   s3_target {
-    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/prediction_price_fact"
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/market_summary"
   }
 
   configuration = jsonencode({
@@ -279,13 +277,101 @@ resource "aws_glue_crawler" "prediction_fact" {
   })
 }
 
-resource "aws_glue_crawler" "market_summary" {
-  name          = "market_summary"
+resource "aws_glue_crawler" "plots_ingestions_crawler" {
+  name          = "plots_ingestions_crawler"
+  role          = aws_iam_role.glue_crawler_role.arn
+  database_name = aws_glue_catalog_database.data_db.name
+  classifiers   = [aws_glue_classifier.housekg_json_classifier.name]
+
+  s3_target {
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/ingestions_plots/"
+  }
+
+  configuration = jsonencode({
+    Version = 1.0
+    CrawlerOutput = {
+      Tables = { AddOrUpdateBehavior = "MergeNewColumns" }
+    }
+  })
+}
+
+resource "aws_glue_job" "plots_feature_engineering" {
+  name              = "plots_feature_engineering"
+  role_arn          = aws_iam_role.glue_job_role.arn
+  glue_version      = "5.0"
+  worker_type       = "G.1X"
+  execution_class   = "FLEX"
+  number_of_workers = 2
+  timeout           = 60
+  max_retries       = 0
+
+  command {
+    name            = "glueetl"
+    script_location = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.plots_feature_engineering_script.key}"
+    python_version  = "3"
+  }
+
+  default_arguments = {
+    "--BUCKET"                           = aws_s3_bucket.data_bucket.bucket
+    "--job-language"                     = "python"
+    "--enable-glue-datacatalog"          = "true"
+    "--enable-metrics"                   = "true"
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--spark-event-logs-path"            = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/plots-feature-engineering/spark-logs/"
+  }
+
+  execution_property {
+    max_concurrent_runs = 1
+  }
+}
+
+resource "aws_glue_crawler" "plots_dim" {
+  name          = "plots_dim"
   role          = aws_iam_role.glue_crawler_role.arn
   database_name = aws_glue_catalog_database.data_db.name
 
   s3_target {
-    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/market_summary"
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/plots_dim"
+  }
+
+  configuration = jsonencode({
+    Version = 1.0
+    CrawlerOutput = {
+      Tables = { AddOrUpdateBehavior = "MergeNewColumns" }
+    }
+    Grouping = {
+      TableGroupingPolicy = "CombineCompatibleSchemas"
+    }
+  })
+}
+
+resource "aws_glue_crawler" "plots_price_fact" {
+  name          = "plots_price_fact"
+  role          = aws_iam_role.glue_crawler_role.arn
+  database_name = aws_glue_catalog_database.data_db.name
+
+  s3_target {
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/plots_price_fact"
+  }
+
+  configuration = jsonencode({
+    Version = 1.0
+    CrawlerOutput = {
+      Tables = { AddOrUpdateBehavior = "MergeNewColumns" }
+    }
+    Grouping = {
+      TableGroupingPolicy = "CombineCompatibleSchemas"
+    }
+  })
+}
+
+resource "aws_glue_crawler" "plots_market_summary" {
+  name          = "plots_market_summary"
+  role          = aws_iam_role.glue_crawler_role.arn
+  database_name = aws_glue_catalog_database.data_db.name
+
+  s3_target {
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/silver/plots_market_summary"
   }
 
   configuration = jsonencode({
