@@ -39,8 +39,8 @@ def get_cleaned_bronze_df():
         F.col("land_square.int").cast(T.DoubleType())
     )
 
-    has_construction = F.array_contains(F.col("document"), 7)
-    has_sown = F.array_contains(F.col("document"), 6)
+    has_construction = F.array_contains(F.col("document"), 6)
+    has_sown = F.array_contains(F.col("document"), 7)
 
     return (df_bronze.select(
                 F.col('slug'),
