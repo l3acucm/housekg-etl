@@ -62,11 +62,14 @@ def get_cleaned_bronze_df():
             )
             .dropDuplicates(["slug"])
             .alias("incoming")
-            .filter(F.col("are_price") > 3000)
-            .filter(F.col("are_price") < 100000)
+            .filter(F.col("are_price") > 0)
             .filter(F.col("land_square") > 0)
             .filter(F.col("micro_district").isNotNull())
             .filter(F.col("purpose").isNotNull())
+            .filter(
+                (F.col("purpose") == "sown") |
+                ((F.col("are_price") > 3000) & (F.col("are_price") < 100000))
+            )
             )
 
 
