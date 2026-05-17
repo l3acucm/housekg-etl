@@ -7,9 +7,14 @@ from awsglue.utils import getResolvedOptions
 from datetime import datetime
 import boto3
 
+from anomaly_correction import flag_anomalies, correct_anomalies_with_haiku
+
 glue_context = GlueContext(SparkContext())
-args = getResolvedOptions(sys.argv, ['BUCKET'])
+args = getResolvedOptions(sys.argv, ['BUCKET', 'MODEL_ID', 'BEDROCK_REGION', 'MAX_LLM_CALLS'])
 bucket = args['BUCKET']
+model_id = args['MODEL_ID']
+bedrock_region = args['BEDROCK_REGION']
+max_llm_calls = int(args['MAX_LLM_CALLS'])
 logger = glue_context.get_logger()
 spark = glue_context.spark_session
 
@@ -28,7 +33,7 @@ market_summary_s3_uri = f"s3://{bucket}/{silver_key}/{market_summary_table_name}
 bronze_table_name = f"plots_{timestamp_str}_json"
 
 
-def get_cleaned_bronze_df():
+def get_bronze_df():
     df_bronze = glue_context.create_dynamic_frame.from_catalog(
         database=glue_database_name,
         table_name=bronze_table_name
@@ -37,6 +42,10 @@ def get_cleaned_bronze_df():
     land_square_double = F.coalesce(
         F.col("land_square.double"),
         F.col("land_square.int").cast(T.DoubleType())
+    )
+    price_usd_double = F.coalesce(
+        F.col("prices")[1]["price"]["int"].cast(T.DoubleType()),
+        F.col("prices")[1]["price"]["long"].cast(T.DoubleType()),
     )
 
     has_construction = F.array_contains(F.col("document"), 6)
@@ -47,11 +56,13 @@ def get_cleaned_bronze_df():
                 F.col('longitude'),
                 F.col('latitude'),
                 F.col('prices')[1]['are_price'].cast(T.DoubleType()).alias('are_price'),
+                price_usd_double.alias('price_usd'),
                 land_square_double.alias('land_square'),
                 F.col('district'),
                 F.col('micro_district'),
                 F.col('document'),
                 F.col('land_location'),
+                F.col('description'),
                 F.col('updated_at'),
             )
             .withColumn("updated_at", F.current_timestamp())
@@ -61,16 +72,94 @@ def get_cleaned_bronze_df():
                  .when(has_sown & ~has_construction, F.lit("sown"))
             )
             .dropDuplicates(["slug"])
-            .alias("incoming")
             .filter(F.col("are_price") > 0)
             .filter(F.col("land_square") > 0)
             .filter(F.col("micro_district").isNotNull())
             .filter(F.col("purpose").isNotNull())
-            .filter(
-                (F.col("purpose") == "sown") |
-                ((F.col("are_price") > 3000) & (F.col("are_price") < 100000))
             )
-            )
+
+
+def apply_anomaly_corrections(df: DataFrame) -> DataFrame:
+    """Flag rows with implausible are_price (vs hard prior and log-MAD by district+purpose),
+    ask Haiku to extract the real area/price from the seller's description, and recompute
+    are_price from the corrected values. Adds audit columns and drops `description`."""
+    flagged = flag_anomalies(
+        df,
+        value_col="are_price",
+        group_cols=["district", "purpose"],
+        hard_low=50.0,
+        hard_high=80000.0,
+        min_group_size=8,
+        mad_k=3.0,
+    )
+
+    anomaly_rows = (
+        flagged.filter(F.col("is_anomaly"))
+        .select("slug", "description", "land_square", "price_usd", "are_price")
+        .collect()
+    )
+
+    corrections = {}
+    if anomaly_rows:
+        logger.info(f"Plots anomalies flagged: {len(anomaly_rows)}; invoking Bedrock (cap={max_llm_calls})")
+        corrections = correct_anomalies_with_haiku(
+            [
+                {
+                    "slug": r["slug"],
+                    "description": r["description"],
+                    "structured_square": r["land_square"],
+                    "structured_price_usd": r["price_usd"],
+                    "implied_per_unit": r["are_price"],
+                }
+                for r in anomaly_rows
+            ],
+            kind="land plot",
+            unit_label="are",
+            model_id=model_id,
+            region=bedrock_region,
+            max_calls=max_llm_calls,
+        )
+
+    corr_schema = T.StructType([
+        T.StructField("slug", T.StringType(), False),
+        T.StructField("corr_land_square", T.DoubleType(), True),
+        T.StructField("corr_price_usd", T.DoubleType(), True),
+        T.StructField("llm_confidence", T.StringType(), True),
+    ])
+    corr_rows = []
+    for slug, parsed in corrections.items():
+        sq = parsed.get("actual_square_are")
+        pr = parsed.get("actual_price_usd")
+        corr_rows.append((
+            slug,
+            float(sq) if isinstance(sq, (int, float)) and sq > 0 else None,
+            float(pr) if isinstance(pr, (int, float)) and pr > 0 else None,
+            parsed.get("confidence"),
+        ))
+    corr_df = spark.createDataFrame(corr_rows, corr_schema)
+
+    return (
+        flagged.join(corr_df, ["slug"], "left")
+        .withColumn("square_original", F.col("land_square"))
+        .withColumn("price_original", F.col("price_usd"))
+        .withColumn("square_corrected_by_llm", F.col("corr_land_square").isNotNull())
+        .withColumn("price_corrected_by_llm", F.col("corr_price_usd").isNotNull())
+        .withColumn("land_square", F.coalesce(F.col("corr_land_square"), F.col("land_square")))
+        .withColumn("price_usd", F.coalesce(F.col("corr_price_usd"), F.col("price_usd")))
+        .withColumn(
+            "are_price",
+            F.when(F.col("land_square") > 0, F.col("price_usd") / F.col("land_square"))
+            .otherwise(F.col("are_price")),
+        )
+        .drop("corr_land_square", "corr_price_usd", "is_anomaly", "description")
+    )
+
+
+def apply_strict_filters(df: DataFrame) -> DataFrame:
+    return df.filter(
+        (F.col("purpose") == "sown")
+        | ((F.col("are_price") > 3000) & (F.col("are_price") < 100000))
+    )
 
 
 def update_scd2_table(*, key_fields: List[T.StructField], parquet_path: str, compared_fields: List[T.StructField],
@@ -268,7 +357,13 @@ def create_plots_market_summary_table(cleaned_df_bronze):
 
 
 def main():
-    cleaned_df_bronze = get_cleaned_bronze_df()
+    bronze_df = get_bronze_df().alias("incoming")
+    bronze_df.cache()
+
+    corrected_df = apply_anomaly_corrections(bronze_df)
+    cleaned_df_bronze = apply_strict_filters(corrected_df)
+    cleaned_df_bronze.cache()
+
     plots_dim_df = cleaned_df_bronze.drop("are_price")
     plots_dim_df.write.mode("overwrite").parquet(plots_dim_table_s3_uri)
 

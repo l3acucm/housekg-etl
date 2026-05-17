@@ -152,6 +152,7 @@
                 "id": "links",
                 "value": [
                   {
+                    "targetBlank": true,
                     "title": "View Details",
                     "url": "https://house.kg/details/${__value.raw}"
                   }
@@ -1103,7 +1104,7 @@
             "resultReuseMaxAgeInMinutes": 60
           },
           "format": 1,
-          "rawSQL": "WITH change_product AS (\n    SELECT\n        r.slug,\n        EXP(\n            SUM(\n                LN(NULLIF(1 + f.are_price_change, 0))\n            )\n        ) AS fact_price_change_product\n    FROM plots_dim r\n    JOIN plots_price_fact f\n        ON r.slug = f.slug\n    WHERE f.are_price_change IS NOT NULL\n    GROUP BY r.slug\n),\ncurrent AS (\n    SELECT\n        r.micro_district,\n        r.purpose,\n        r.slug AS slug,\n        r.land_square,\n        f.are_price * r.land_square AS price,\n        -- map integer array -> string array\n        TRANSFORM(\n            r.document,\n            d -> CASE d\n                WHEN 1 THEN 'Договор купли-продажи'\n                WHEN 2 THEN 'Договор дарения'\n                WHEN 3 THEN 'Договор долевого участия'\n                WHEN 4 THEN 'Технический паспорт'\n                WHEN 5 THEN 'Акт ввода в эксплуатацию'\n                WHEN 6 THEN 'Красная книга'\n                WHEN 7 THEN 'Зелёная книга'\n                WHEN 8 THEN 'Свидетельство о праве на наследство'\n                ELSE CAST(d AS VARCHAR)\n            END\n        ) AS document,\n        ROUND(f.are_price) AS fact_are_price\n    FROM plots_price_fact f\n    JOIN plots_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = true\n        AND (\n            TRY_CAST('$district' AS INTEGER) IS NULL\n            OR r.micro_district = CAST('$district' AS INTEGER)\n        ) AND r.purpose IN (${purpose:singlequote})\n)\nSELECT\n    c.micro_district,\n    c.purpose,\n    c.slug,\n    c.land_square,\n    c.fact_are_price,\n    ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n    c.price,\n    c.document\nFROM current c\nLEFT JOIN change_product cp\n    ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;",
+          "rawSQL": "WITH change_product AS (\n    SELECT\n        r.slug,\n        EXP(\n            SUM(\n                LN(NULLIF(1 + f.are_price_change, 0))\n            )\n        ) AS fact_price_change_product\n    FROM plots_dim r\n    JOIN plots_price_fact f\n        ON r.slug = f.slug\n    WHERE f.are_price_change IS NOT NULL\n    GROUP BY r.slug\n),\ncurrent AS (\n    SELECT\n        r.micro_district,\n        r.purpose,\n        r.slug AS slug,\n        r.land_square,\n        r.square_original,\n        r.square_corrected_by_llm,\n        r.price_original,\n        r.price_corrected_by_llm,\n        r.llm_confidence,\n        f.are_price * r.land_square AS price,\n        -- map integer array -> string array\n        TRANSFORM(\n            r.document,\n            d -> CASE d\n                WHEN 1 THEN 'Договор купли-продажи'\n                WHEN 2 THEN 'Договор дарения'\n                WHEN 3 THEN 'Договор долевого участия'\n                WHEN 4 THEN 'Технический паспорт'\n                WHEN 5 THEN 'Акт ввода в эксплуатацию'\n                WHEN 6 THEN 'Красная книга'\n                WHEN 7 THEN 'Зелёная книга'\n                WHEN 8 THEN 'Свидетельство о праве на наследство'\n                ELSE CAST(d AS VARCHAR)\n            END\n        ) AS document,\n        ROUND(f.are_price) AS fact_are_price\n    FROM plots_price_fact f\n    JOIN plots_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = true\n        AND (\n            TRY_CAST('$district' AS INTEGER) IS NULL\n            OR r.micro_district = CAST('$district' AS INTEGER)\n        ) AND r.purpose IN (${purpose:singlequote})\n)\nSELECT\n    c.micro_district,\n    c.purpose,\n    c.slug,\n    c.document,\n    c.land_square,\n    c.fact_are_price,\n    c.price,\n    ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n    c.square_original,\n    c.price_original,\n    c.square_corrected_by_llm,\n    c.price_corrected_by_llm,\n    c.llm_confidence\nFROM current c\nLEFT JOIN change_product cp\n    ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;",
           "refId": "A"
         }
       ],
@@ -1666,8 +1667,8 @@
       },
       {
         "current": {
-          "text": "205",
-          "value": "205"
+          "text": "market",
+          "value": "market"
         },
         "includeAll": false,
         "label": "District",
@@ -1692,6 +1693,6 @@
   "timezone": "browser",
   "title": "Plots",
   "uid": "housekg-plots",
-  "version": 30,
+  "version": 35,
   "weekStart": ""
 }

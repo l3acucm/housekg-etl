@@ -141,6 +141,17 @@ resource "aws_iam_role_policy" "glue_job_policy" {
         Resource = "*"
       },
       {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel"
+        ]
+        Resource = [
+          "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-*",
+          "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-haiku-4-*",
+          "arn:aws:bedrock:*:*:inference-profile/eu.anthropic.claude-haiku-4-*"
+        ]
+      },
+      {
         "Effect" : "Allow",
         "Action" : [
           "s3:GetObject",
@@ -164,7 +175,7 @@ resource "aws_glue_crawler" "housekg_ingestions_crawler" {
   name          = "housekg_ingestions_crawler"
   role          = aws_iam_role.glue_crawler_role.arn
   database_name = aws_glue_catalog_database.data_db.name
-  classifiers = [aws_glue_classifier.housekg_json_classifier.name]
+  classifiers   = [aws_glue_classifier.housekg_json_classifier.name]
 
   s3_target {
     path = "s3://${aws_s3_bucket.data_bucket.bucket}/ingestions_apartments/"
@@ -197,19 +208,23 @@ resource "aws_glue_job" "feature_engineering" {
   max_retries       = 0
 
   command {
-    name = "glueetl" # Use "glueetl" for Spark ETL jobs
+    name            = "glueetl" # Use "glueetl" for Spark ETL jobs
     script_location = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.feature_engineering_script.key}"
     python_version  = "3" # Glue 5.0 supports Python 3.11
   }
 
 
   default_arguments = {
-    "--BUCKET"                          = aws_s3_bucket.data_bucket.bucket
-    "--job-language"                    = "python"
-    "--enable-glue-datacatalog"         = "true"
-    "--enable-metrics" = "true" # Enable metrics for job profiling
+    "--BUCKET"                           = aws_s3_bucket.data_bucket.bucket
+    "--job-language"                     = "python"
+    "--enable-glue-datacatalog"          = "true"
+    "--enable-metrics"                   = "true" # Enable metrics for job profiling
     "--enable-continuous-cloudwatch-log" = "true" # Enable continuous logging
-    "--spark-event-logs-path"           = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/feature-engineering/spark-logs/"
+    "--spark-event-logs-path"            = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/feature-engineering/spark-logs/"
+    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key}"
+    "--MODEL_ID"                         = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    "--BEDROCK_REGION"                   = "us-east-1"
+    "--MAX_LLM_CALLS"                    = "100"
   }
 
   execution_property {
@@ -318,6 +333,10 @@ resource "aws_glue_job" "plots_feature_engineering" {
     "--enable-metrics"                   = "true"
     "--enable-continuous-cloudwatch-log" = "true"
     "--spark-event-logs-path"            = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/plots-feature-engineering/spark-logs/"
+    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key}"
+    "--MODEL_ID"                         = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    "--BEDROCK_REGION"                   = "us-east-1"
+    "--MAX_LLM_CALLS"                    = "100"
   }
 
   execution_property {

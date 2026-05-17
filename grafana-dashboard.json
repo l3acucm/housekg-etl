@@ -1034,7 +1034,7 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    r.slug AS slug,\n    r.square,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    r.year,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM realty_price_fact f\n  JOIN realty_dim r\n    ON f.slug = r.slug\n  WHERE f.is_current = true\n    AND f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.year,\n  c.micro_district,\n  c.slug,\n  c.square,\n  c.fact_sqm_price,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  c.price,\n  c.rooms,\n  c.floor,\n  c.floors\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;\n\n\n",
+          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    r.slug AS slug,\n    r.square,\n    r.square_original,\n    r.square_corrected_by_llm,\n    r.price_original,\n    r.price_corrected_by_llm,\n    r.llm_confidence,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    r.year,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM realty_price_fact f\n  JOIN realty_dim r\n    ON f.slug = r.slug\n  WHERE f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.year,\n  c.micro_district,\n  c.slug,\n  c.rooms,\n  c.floor,\n  c.floors,\n  c.square,\n  c.fact_sqm_price,\n  c.price,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  c.square_original,\n  c.price_original,\n  c.square_corrected_by_llm,\n  c.price_corrected_by_llm,\n  c.llm_confidence\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;\n\n\n",
           "refId": "A",
           "table": "prediction_price_fact"
         }
@@ -1592,7 +1592,7 @@
     ]
   },
   "time": {
-    "from": "now-7d",
+    "from": "now-30d",
     "to": "now"
   },
   "timepicker": {

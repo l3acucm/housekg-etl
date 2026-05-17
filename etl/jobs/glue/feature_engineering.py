@@ -7,9 +7,14 @@ from awsglue.utils import getResolvedOptions
 from datetime import datetime
 import boto3
 
+from anomaly_correction import flag_anomalies, correct_anomalies_with_haiku
+
 glue_context = GlueContext(SparkContext())
-args = getResolvedOptions(sys.argv, ['BUCKET'])
+args = getResolvedOptions(sys.argv, ['BUCKET', 'MODEL_ID', 'BEDROCK_REGION', 'MAX_LLM_CALLS'])
 bucket = args['BUCKET']
+model_id = args['MODEL_ID']
+bedrock_region = args['BEDROCK_REGION']
+max_llm_calls = int(args['MAX_LLM_CALLS'])
 logger = glue_context.get_logger()
 spark = glue_context.spark_session
 
@@ -29,24 +34,34 @@ market_summary_s3_uri = f"s3://{bucket}/{silver_key}/{market_summary_table_name}
 bronze_table_name = f"apartments_{timestamp_str}_json"
 
 
-def get_cleaned_bronze_df():
+def get_bronze_df():
     df_bronze = glue_context.create_dynamic_frame.from_catalog(
         database=glue_database_name,
         table_name=bronze_table_name
     ).toDF().select(F.explode(F.col("list")).alias("house")).select('house.*')
 
-    # Usage
+    square_double = F.coalesce(
+        F.col("square.double"),
+        F.col("square.int").cast(T.DoubleType())
+    )
+    price_usd_double = F.coalesce(
+        F.col("prices")[1]["price"]["double"].cast(T.DoubleType()),
+        F.col("prices")[1]["price"]["int"].cast(T.DoubleType()),
+    )
+
     df_bronze = df_bronze.select(
         F.col('slug'),
         F.col('longitude'),
         F.col('latitude'),
-        F.col('prices')[1]['m2_price'].alias('sqm_price'),
-        F.col('square'),
+        F.col('prices')[1]['m2_price'].cast(T.DoubleType()).alias('sqm_price'),
+        price_usd_double.alias('price_usd'),
+        square_double.alias('square'),
         F.col('kitchen_square'),
         F.col('floor'),
         F.col('floors'),
         F.col('district'),
         F.col('micro_district'),
+        F.col('description'),
         F.col('updated_at'),
         F.col('year'),
         F.col('toilet'),
@@ -56,31 +71,117 @@ def get_cleaned_bronze_df():
         F.col('ceiling_height')
     )
 
-    return (df_bronze
-            .withColumn("square", F.col("square.int"))
-            .withColumn("kitchen_square",
-                        F.when(F.col("kitchen_square").isNull(),
-                               F.when(F.col("square") > 120, 15)
-                               .otherwise(F.when(F.col("square") < 70, 6)
-                                          .otherwise(F.round(F.col("square") * 0.15).cast("int"))))
-                        .otherwise(F.col("kitchen_square.int")))
-            .withColumn("ceiling_height",
-                        F.when(F.col("ceiling_height").isNull(), 3)
-                        .otherwise(F.col("ceiling_height.double")))
-            .withColumn("toilet",
-                        F.when(F.col("toilet").isNull(),
-                               F.when(F.col("square") > 140, 3)
-                               .otherwise(F.when(F.col("square") > 75, 2)
-                                          .otherwise(1)))
-                        .otherwise(F.col("toilet")))
-            .withColumn("updated_at", F.current_timestamp())
-            .dropDuplicates(["slug"])
-            .alias("incoming")
-            .filter(F.col("sqm_price") > 300)
-            .filter(F.col("sqm_price") < 2500)
-            .filter(F.col("micro_district").isNotNull())
-            .drop("price")
-            )
+    return (
+        df_bronze
+        .withColumn("updated_at", F.current_timestamp())
+        .dropDuplicates(["slug"])
+        .filter(F.col("sqm_price") > 0)
+        .filter(F.col("square") > 0)
+        .filter(F.col("micro_district").isNotNull())
+    )
+
+
+def apply_anomaly_corrections(df: DataFrame) -> DataFrame:
+    flagged = flag_anomalies(
+        df,
+        value_col="sqm_price",
+        group_cols=["district", "rooms"],
+        hard_low=100.0,
+        hard_high=5000.0,
+        min_group_size=8,
+        mad_k=3.0,
+    )
+
+    anomaly_rows = (
+        flagged.filter(F.col("is_anomaly"))
+        .select("slug", "description", "square", "price_usd", "sqm_price")
+        .collect()
+    )
+
+    corrections = {}
+    if anomaly_rows:
+        logger.info(f"Apartment anomalies flagged: {len(anomaly_rows)}; invoking Bedrock (cap={max_llm_calls})")
+        corrections = correct_anomalies_with_haiku(
+            [
+                {
+                    "slug": r["slug"],
+                    "description": r["description"],
+                    "structured_square": r["square"],
+                    "structured_price_usd": r["price_usd"],
+                    "implied_per_unit": r["sqm_price"],
+                }
+                for r in anomaly_rows
+            ],
+            kind="apartment",
+            unit_label="m2",
+            model_id=model_id,
+            region=bedrock_region,
+            max_calls=max_llm_calls,
+        )
+
+    corr_schema = T.StructType([
+        T.StructField("slug", T.StringType(), False),
+        T.StructField("corr_square", T.DoubleType(), True),
+        T.StructField("corr_price_usd", T.DoubleType(), True),
+        T.StructField("llm_confidence", T.StringType(), True),
+    ])
+    corr_rows = []
+    for slug, parsed in corrections.items():
+        sq = parsed.get("actual_square_m2")
+        pr = parsed.get("actual_price_usd")
+        corr_rows.append((
+            slug,
+            float(sq) if isinstance(sq, (int, float)) and sq > 0 else None,
+            float(pr) if isinstance(pr, (int, float)) and pr > 0 else None,
+            parsed.get("confidence"),
+        ))
+    corr_df = spark.createDataFrame(corr_rows, corr_schema)
+
+    return (
+        flagged.join(corr_df, ["slug"], "left")
+        .withColumn("square_original", F.col("square"))
+        .withColumn("price_original", F.col("price_usd"))
+        .withColumn("square_corrected_by_llm", F.col("corr_square").isNotNull())
+        .withColumn("price_corrected_by_llm", F.col("corr_price_usd").isNotNull())
+        .withColumn("square", F.coalesce(F.col("corr_square"), F.col("square")))
+        .withColumn("price_usd", F.coalesce(F.col("corr_price_usd"), F.col("price_usd")))
+        .withColumn(
+            "sqm_price",
+            F.when(F.col("square") > 0, F.col("price_usd") / F.col("square"))
+            .otherwise(F.col("sqm_price")),
+        )
+        .drop("corr_square", "corr_price_usd", "is_anomaly", "description", "price_usd")
+    )
+
+
+def apply_imputations_and_strict_filters(df: DataFrame) -> DataFrame:
+    return (
+        df
+        .withColumn("square", F.col("square").cast(T.IntegerType()))
+        .withColumn(
+            "kitchen_square",
+            F.when(
+                F.col("kitchen_square").isNull(),
+                F.when(F.col("square") > 120, 15)
+                .otherwise(
+                    F.when(F.col("square") < 70, 6).otherwise(F.round(F.col("square") * 0.15).cast("int"))
+                ),
+            ).otherwise(F.col("kitchen_square.int")),
+        )
+        .withColumn(
+            "ceiling_height",
+            F.when(F.col("ceiling_height").isNull(), 3).otherwise(F.col("ceiling_height.double")),
+        )
+        .withColumn(
+            "toilet",
+            F.when(
+                F.col("toilet").isNull(),
+                F.when(F.col("square") > 140, 3).otherwise(F.when(F.col("square") > 75, 2).otherwise(1)),
+            ).otherwise(F.col("toilet")),
+        )
+        .filter(F.col("sqm_price") > 300)
+        .filter(F.col("sqm_price") < 2500)
+    )
 
 
 def update_scd2_table(*, key_field: T.StructField, parquet_path: str, compared_fields: List[T.StructField],
@@ -301,7 +402,13 @@ def create_market_summary_table(cleaned_df_bronze):
 
 
 def main():
-    cleaned_df_bronze = get_cleaned_bronze_df()
+    bronze_df = get_bronze_df().alias("incoming")
+    bronze_df.cache()
+
+    corrected_df = apply_anomaly_corrections(bronze_df)
+    cleaned_df_bronze = apply_imputations_and_strict_filters(corrected_df)
+    cleaned_df_bronze.cache()
+
     realty_dim_df = cleaned_df_bronze.drop("sqm_price")
     realty_dim_df.write.mode("overwrite").parquet(realty_dim_table_s3_uri)
 
