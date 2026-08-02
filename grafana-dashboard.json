@@ -996,7 +996,67 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 194
+                "value": 98
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rooms"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "floor"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "floors"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 54
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "square"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_sqm_price"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 59
               }
             ]
           }
@@ -1014,8 +1074,8 @@
         "showHeader": true,
         "sortBy": [
           {
-            "desc": true,
-            "displayName": "year"
+            "desc": false,
+            "displayName": "square"
           }
         ]
       },
@@ -1034,7 +1094,7 @@
             "uid": "ben2f8338veo0e"
           },
           "format": 1,
-          "rawSQL": "WITH change_product AS (\n  SELECT\n    r.slug,\n    EXP(\n      SUM(\n        LN(NULLIF(1 + f.sqm_price_change, 0))\n      )\n    ) AS fact_price_change_product\n  FROM realty_dim r\n  JOIN realty_price_fact f\n    ON r.slug = f.slug\n  WHERE f.sqm_price_change IS NOT NULL\n  GROUP BY r.slug\n),\ncurrent AS (\n  SELECT\n    r.micro_district,\n    r.slug AS slug,\n    r.square,\n    r.square_original,\n    r.square_corrected_by_llm,\n    r.price_original,\n    r.price_corrected_by_llm,\n    r.llm_confidence,\n    f.sqm_price * r.square AS price,\n    r.rooms,\n    r.floor,\n    r.floors,\n    r.year,\n    ROUND(f.sqm_price) AS fact_sqm_price\n  FROM realty_price_fact f\n  JOIN realty_dim r\n    ON f.slug = r.slug\n  WHERE f.is_current = true\n    AND (\n      TRY_CAST('$district' AS INTEGER) IS NULL\n      OR r.micro_district = CAST('$district' AS INTEGER)\n    )\n)\nSELECT\n  c.year,\n  c.micro_district,\n  c.slug,\n  c.rooms,\n  c.floor,\n  c.floors,\n  c.square,\n  c.fact_sqm_price,\n  c.price,\n  ROUND(cp.fact_price_change_product, 4) AS fact_price_change_product,\n  c.square_original,\n  c.price_original,\n  c.square_corrected_by_llm,\n  c.price_corrected_by_llm,\n  c.llm_confidence\nFROM current c\nLEFT JOIN change_product cp\n  ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;\n\n\n",
+          "rawSQL": "WITH change_product AS (\n    SELECT\n        r.slug,\n        EXP(\n            SUM(\n                CASE\n                    WHEN 1 + f.sqm_price_change > 0\n                    THEN LN(1 + f.sqm_price_change)\n                END\n            )\n        ) AS fact_price_change_product\n    FROM realty_dim r\n    JOIN realty_price_fact f\n        ON r.slug = f.slug\n    WHERE f.sqm_price_change IS NOT NULL\n    GROUP BY r.slug\n),\n\ncurrent_base AS (\n    SELECT\n        r.micro_district,\n        r.condition,\n        r.slug,\n        r.square,\n        r.square_original,\n        r.square_corrected_by_llm,\n        r.price_original,\n        r.price_corrected_by_llm,\n        r.llm_confidence,\n        f.sqm_price * r.square AS price,\n        r.rooms,\n        r.floor,\n        r.floors,\n        r.year,\n        ROUND(f.sqm_price) AS fact_sqm_price\n    FROM realty_price_fact f\n    JOIN realty_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = TRUE\n),\n\ncurrent AS (\n    SELECT *\n    FROM current_base\n    WHERE\n\n        -- Район\n        (\n            TRY_CAST('$district' AS INTEGER) IS NULL\n            OR micro_district = CAST('$district' AS INTEGER)\n        )\n\n        -- Год\n        AND (\n            TRY_CAST('$min_year' AS INTEGER) IS NULL\n            OR year >= CAST('$min_year' AS INTEGER)\n        )\n        AND (\n            TRY_CAST('$max_year' AS INTEGER) IS NULL\n            OR year <= CAST('$max_year' AS INTEGER)\n        )\n\n        -- Цена за квадрат\n        AND (\n            TRY_CAST('$min_sqm_price' AS DOUBLE) IS NULL\n            OR fact_sqm_price >= CAST('$min_sqm_price' AS DOUBLE)\n        )\n        AND (\n            TRY_CAST('$max_sqm_price' AS DOUBLE) IS NULL\n            OR fact_sqm_price <= CAST('$max_sqm_price' AS DOUBLE)\n        )\n\n        -- Комнаты\n        AND (\n            TRY_CAST('$min_rooms' AS INTEGER) IS NULL\n            OR rooms >= CAST('$min_rooms' AS INTEGER)\n        )\n        AND (\n            TRY_CAST('$max_rooms' AS INTEGER) IS NULL\n            OR rooms <= CAST('$max_rooms' AS INTEGER)\n        )\n\n        -- Этаж\n        AND (\n            TRY_CAST('$min_floor' AS INTEGER) IS NULL\n            OR floor >= CAST('$min_floor' AS INTEGER)\n        )\n        AND (\n            TRY_CAST('$max_floor' AS INTEGER) IS NULL\n            OR floor <= CAST('$max_floor' AS INTEGER)\n        )\n\n        -- Этажность\n        AND (\n            TRY_CAST('$min_floors' AS INTEGER) IS NULL\n            OR floors >= CAST('$min_floors' AS INTEGER)\n        )\n        AND (\n            TRY_CAST('$max_floors' AS INTEGER) IS NULL\n            OR floors <= CAST('$max_floors' AS INTEGER)\n        )\n\n        -- Площадь\n        AND (\n            TRY_CAST('$min_square' AS INTEGER) IS NULL\n            OR square >= CAST('$min_square' AS INTEGER)\n        )\n        AND (\n            TRY_CAST('$max_square' AS INTEGER) IS NULL\n            OR square <= CAST('$max_square' AS INTEGER)\n        )\n\n        -- Полная цена\n        AND (\n            TRY_CAST('$min_price' AS INTEGER) IS NULL\n            OR price >= CAST('$min_price' AS INTEGER)\n        )\n        AND (\n            TRY_CAST('$max_price' AS INTEGER) IS NULL\n            OR price <= CAST('$max_price' AS INTEGER)\n        )        \n        -- Состояние\n        AND (\n            '${condition:csv}' = ''\n            OR \"condition\" IN (${condition:csv})\n        )\n)\n\nSELECT\n    c.square,\n    c.fact_sqm_price,\n    COALESCE(\n        CASE\n            WHEN cp.fact_price_change_product != cp.fact_price_change_product\n            THEN 1\n            ELSE ROUND(cp.fact_price_change_product, 4)\n        END,\n        1\n    ) AS fact_price_change_product,\n    c.micro_district,\n    c.year,\n    c.rooms,\n    c.slug,\n    c.floor,\n    c.floors,\n    c.price,\n    c.square_original,\n    c.price_original,\n    c.square_corrected_by_llm,\n    c.price_corrected_by_llm,\n    c.llm_confidence\nFROM current c\nLEFT JOIN change_product cp\n    ON c.slug = cp.slug\nORDER BY fact_price_change_product DESC;",
           "refId": "A",
           "table": "prediction_price_fact"
         }
@@ -1588,6 +1648,259 @@
         "query": "market, 69-га : 177, Азия Молл : 122, Ак Кеме : 133, Ак-Орго ж/м : 57, Ак-Ордо 3 ж/м : 234, Ак-Ордо ж/м : 56, Академия Наук : 150, Ала-Тоо 3 ж-м : 238, Ала-Тоо м-н : 48, Арча-Бешик ж/м : 55, Баха : 166, БГУ : 92, Верхний Джал м-н : 44, Гагарина : 167, Госрегистр : 96, Джал 15 м-н : 86, Джал-23 м-н (Нижний Джал) : 66, Джал-29 м-н : 47, Джал-30 м-н : 63, Джальская больница : 164, ж/м Ала-Арча 2 : 176, Завод Кока-Кола : 180, Ипподром : 131, Калыка Акиева - Льва Толстого : 178, Киргизия 1 ж/м : 85, Киргизия-2 м-н : 50, Кызыл-Аскер ж/м : 87, Лущихина - Льва Толстого : 179, Молодая Гвардия : 144, Московская - Белинка : 165, Московская - Уметалиева : 168, Орок ж/м : 59, Ошский рынок : 109, Пишпек ж/м : 54, Рабочий Городок : 53, с. Верхний Орок : 202, с. Джал : 224, с. Калтар : 222, с. Кашка-Баш : 221, с. Нижний Орок : 203, с. Новопавловка : 200, с. Орто-Сай : 52, с. Сарбан : 223, с. Селекционное : 220, с. Чон-Арык : 51, СК. Тоо-Жели : 225, Средний Джал м-н : 45, Старый аэропорт : 132, Тенир-Тоо м-н : 49, Филармония : 116, Шлагбаум : 119, Ынтымак ж/м : 58, 10 м-н : 8, 11 м-н : 9, 12 м-н : 10, 3 м-н : 1, 4 м-н : 2, 5 м-н : 3, 6 м-н : 4, 7 м-н : 5, 8 м-н : 6, 9 м-н : 7, Айкол : 226, Ала-Арча 3 : 240, Ала-Арча ж/м : 175, Алматинка - Магистраль : 159, Алтын-Ордо ж/м : 22, Анар-Бак ж/м : 227, Асанбай м-н : 11, АУЦА : 141, Ахунбаева-Достоевского : 235, АЮ Grand : 90, Восточная Промзона : 192, Ген прокуратура : 158, Горького - Алма-Атинская : 182, Жилгородок Ницца : 69, Жилгородок Совмина ж/м : 21, Кара Дарыя : 157, Кара-Жыгач ж/м : 17, Карла Маркса : 151, КГУСТА : 102, Кок-Жар ж/м : 16, Кок-Жар м-н : 13, Кулатова- Матросова : 181, Магистраль : 145, Матросова : 152, Мед. академия : 107, Ортосайский рынок : 108, Оскон-Ордо ж/м : 207, Парк Ататюрк : 125, Полицейский городок м-н : 236, Проспект Айтматова : 239, Рухий Мурас ж/м : 20, с. Кок-Джар : 205, Советская - Скрябина : 161, Таш Рабат : 113, Токольдош ж/м : 18, Тунгуч 44 : 241, Тунгуч м-н : 12, Улан м-н : 14, Улан-2 м-н : 15, Учкун-2 ж/м : 19, Физкультурный : 154, Чокана Валиханова - Исакеева : 183, 1000 мелочей : 147, 110 квартал ж/м : 74, VEFA : 120, Ак Эмир рынок : 146, Ак-Босого ж/м : 32, Алтын-Бешик ж/м : 28, Алтын-Казык ж/м : 27, Аска-Таш ж/м : 29, Ата Журт : 233, Балбан-Таймаш ж/м : 73, Бишкек-Парк : 121, Боталиева - Тулебердиева : 197, Вечерка : 149, Военторг : 155, Горького - Панфилова : 162, Дворец спорта : 127, Ден Сяопина - Фучика : 174, Достук : 99, Достук м-н : 23, Душанбинка : 124, ж/м Учкун-2 (Аэропорт) : 228, ЖД вокзал : 138, Западный автовокзал : 100, Золотой квадрат : 123, Калыс-Ордо 2 : 230, Калыс-Ордо ж/м : 30, Касым ж/м : 25, Керемет ж/м : 72, КНУ : 171, Колмо ж/м : 26, Космос : 156, Кудайберген : 104, Маданият ж/м : 75, Манаса-Кудрука : 199, Махатма Ганди - БЧК : 196, Моссовет : 89, Мурас-Ордо ж/м : 31, Парк Панфилова/Спартак : 128, Площадь Победы : 148, Политех : 110, с. Дача СУ : 219, с. Достук : 209, с. Кернивоз : 232, с. Лесное : 231, с. Маевка : 106, с. Озёрное : 216, с. Пригородное : 201, с. Степное : 217, с. Учкун : 218, Салам-Алик ж/м : 76, Сквер Тоголок Молдо : 139, Тендик ж/м : 33, Тоголок Молдо - Щербакова : 195, Тоголок-Молдо - БЧК : 187, Тынчтык м-н : 237, Умут ж/м : 204, Хабитат ж/м : 70, Щербакова ж/м : 71, Юг-2 м-н : 24, Ак-Бата ж/м : 39, Ак-Жар ж/м : 61, Ак-Тилек 2 ж/м : 62, Ак-Тилек ж/м : 41, Академия МВД : 193, Аламедин-1 м-н : 35, Аламединский рынок : 91, Бакай-Ата ж/м : 43, Восток-5 м-н : 36, Восточный автовокзал : 93, Гоин : 95, Городок строителей : 82, Городок энергетиков : 81, Дзержинского - Куренкеева : 184, Дордой 2 ж/м : 84, Дордой ж/м : 42, Дордой Плаза : 135, ж/м Биримдик Кут : 211, Жибек-Жолу - Лермонтова : 173, Кайынды ж/м : 79, Карагачевая роща : 229, Карпинка : 101, Келечек ж/м : 37, Керамическая ж/м : 78, Керченский ж/м : 83, Кожзавод : 191, Комфорт : 137, Красный Строитель 2 ж/м : 60, Красный Строитель ж/м : 34, Кузнечная крепость : 130, Лебединовка : 206, Мадина : 105, Нижний Токольдош : 170, Орозбекова - Жибек-Жолу : 172, с. Аламудун : 214, с. Восток : 213, с. Мыкан : 210, с. Нижняя Ала-Арча : 208, с. Садовое : 212, Советская - БЧК : 186, Советская - Куренкеева : 185, Советская - Щербакова : 189, Станционный : 215, Старый толчок : 160, Таатан : 112, Табачка : 188, Тоголок молдо- Куренкеева : 194, Туберкулезная больница : 198, ТЭЦ : 114, Учкун ж/м : 38, Учкун м-н : 67, Центральная мечеть : 129, Церковь : 117, Цирк/Дворец бракосочетания : 126, ЦУМ : 118, Чалбай ж/м : 80, Чуй - Алматинка : 169, Элебесова - Фере (Турбаза) : 190, Эне-Сай ж/м : 40, Юбилейк : 163а",
         "type": "custom",
         "valuesFormat": "csv"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "label": "Min Year",
+        "name": "min_year",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "name": "max_year",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "name": "min_sqm_price",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "label": "Max sqm price",
+        "name": "max_sqm_price",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "3",
+          "value": "3"
+        },
+        "label": "Min rooms",
+        "name": "min_rooms",
+        "options": [
+          {
+            "selected": true,
+            "text": "3",
+            "value": "3"
+          }
+        ],
+        "query": "3",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "label": "Max rooms",
+        "name": "max_rooms",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "1",
+          "value": "1"
+        },
+        "label": "Min floor",
+        "name": "min_floor",
+        "options": [
+          {
+            "selected": true,
+            "text": "1",
+            "value": "1"
+          }
+        ],
+        "query": "1",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "label": "Max floor",
+        "name": "max_floor",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "6",
+          "value": "6"
+        },
+        "label": "Min floors",
+        "name": "min_floors",
+        "options": [
+          {
+            "selected": true,
+            "text": "6",
+            "value": "6"
+          }
+        ],
+        "query": "6",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "label": "Max floors",
+        "name": "max_floors",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "60",
+          "value": "60"
+        },
+        "label": "Min square",
+        "name": "min_square",
+        "options": [
+          {
+            "selected": true,
+            "text": "60",
+            "value": "60"
+          }
+        ],
+        "query": "60",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "80",
+          "value": "80"
+        },
+        "label": "Max square",
+        "name": "max_square",
+        "options": [
+          {
+            "selected": true,
+            "text": "80",
+            "value": "80"
+          }
+        ],
+        "query": "80",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "label": "Min price",
+        "name": "min_price",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "120000",
+          "value": "120000"
+        },
+        "name": "max_price",
+        "options": [
+          {
+            "selected": true,
+            "text": "120000",
+            "value": "120000"
+          }
+        ],
+        "query": "120000",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": [
+            "9"
+          ],
+          "value": [
+            "9"
+          ]
+        },
+        "description": "",
+        "label": "Condition",
+        "multi": true,
+        "name": "condition",
+        "options": [],
+        "query": "\nпод самоотделку (псо) : 9, евроремонт : 3, хорошее : 1, среднее : 2, не достроен : 8",
+        "type": "custom",
+        "valuesFormat": "csv"
       }
     ]
   },
@@ -1604,6 +1917,6 @@
   "timezone": "browser",
   "title": "Apartments",
   "uid": "den2gi8ofc7i8f",
-  "version": 14,
+  "version": 37,
   "weekStart": ""
 }
