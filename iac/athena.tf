@@ -71,6 +71,31 @@ resource "aws_athena_named_query" "plots_market_summary_query" {
   query       = "SELECT * FROM ${aws_glue_catalog_database.data_db.name}.plots_market_summary LIMIT 100;"
 }
 
+# Athena named queries for commercial
+resource "aws_athena_named_query" "commercial_dim_query" {
+  name        = "commercial_dim_query"
+  workgroup   = aws_athena_workgroup.housekg_workgroup.name
+  database    = aws_glue_catalog_database.data_db.name
+  description = "Query for commercial dimension data"
+  query       = "SELECT * FROM ${aws_glue_catalog_database.data_db.name}.commercial_dim LIMIT 100;"
+}
+
+resource "aws_athena_named_query" "commercial_price_fact_query" {
+  name        = "commercial_price_fact_query"
+  workgroup   = aws_athena_workgroup.housekg_workgroup.name
+  database    = aws_glue_catalog_database.data_db.name
+  description = "Query for commercial price fact data"
+  query       = "SELECT * FROM ${aws_glue_catalog_database.data_db.name}.commercial_price_fact LIMIT 100;"
+}
+
+resource "aws_athena_named_query" "commercial_market_summary_query" {
+  name        = "commercial_market_summary_query"
+  workgroup   = aws_athena_workgroup.housekg_workgroup.name
+  database    = aws_glue_catalog_database.data_db.name
+  description = "Query for commercial market summary data"
+  query       = "SELECT * FROM ${aws_glue_catalog_database.data_db.name}.commercial_market_summary LIMIT 100;"
+}
+
 # IAM role for Athena
 resource "aws_iam_role" "athena_role" {
   name = "athena_role"

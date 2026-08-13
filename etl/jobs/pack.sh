@@ -6,3 +6,5 @@ cd ..
 zip -j ../../../../iac/artifacts/ingestion_lambda.zip main.py
 cd ../plots_ingestion
 zip -j ../../../../iac/artifacts/plots_ingestion_lambda.zip main.py
+cd ../commercial_ingestion
+zip -j ../../../../iac/artifacts/commercial_ingestion_lambda.zip main.py

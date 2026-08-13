@@ -25,7 +25,8 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
         Effect = "Allow",
         Resource = [
           "${aws_s3_bucket.data_bucket.arn}/ingestions_apartments/*",
-          "${aws_s3_bucket.data_bucket.arn}/ingestions_plots/*"
+          "${aws_s3_bucket.data_bucket.arn}/ingestions_plots/*",
+          "${aws_s3_bucket.data_bucket.arn}/ingestions_commercial/*"
         ]
       },
       {
@@ -54,12 +55,12 @@ resource "aws_lambda_function" "ingestion_lambda" {
   function_name = "ingestion_lambda"
   filename      = "artifacts/ingestion_lambda.zip"
   handler       = "main.handler"
-  memory_size   = 512
+  memory_size   = 768
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_role.arn
   source_code_hash = filebase64sha256("artifacts/ingestion_lambda.zip")
   layers        = [aws_lambda_layer_version.requests_layer.arn]
-  timeout       = 30
+  timeout       = 60
   environment {
     variables = {
       BUCKET_NAME = var.s3_bucket
@@ -91,6 +92,25 @@ resource "aws_lambda_function" "plots_ingestion_lambda" {
       BUCKET_NAME      = var.s3_bucket
       FILE_NAME_PREFIX = "plots"
       CRAWLER_NAME     = "plots_ingestions_crawler"
+    }
+  }
+}
+
+resource "aws_lambda_function" "commercial_ingestion_lambda" {
+  function_name = "commercial_ingestion_lambda"
+  filename      = "artifacts/commercial_ingestion_lambda.zip"
+  handler       = "main.handler"
+  memory_size   = 512
+  runtime       = "python3.10"
+  role          = aws_iam_role.lambda_role.arn
+  source_code_hash = filebase64sha256("artifacts/commercial_ingestion_lambda.zip")
+  layers        = [aws_lambda_layer_version.requests_layer.arn]
+  timeout       = 60
+  environment {
+    variables = {
+      BUCKET_NAME      = var.s3_bucket
+      FILE_NAME_PREFIX = "commercial"
+      CRAWLER_NAME     = "commercial_ingestions_crawler"
     }
   }
 }

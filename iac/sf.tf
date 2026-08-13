@@ -4,10 +4,10 @@ resource "aws_sfn_state_machine" "data_processing_workflow" {
 
   definition = <<EOF
 {
-  "Comment": "Data Processing Workflow — apartments and plots in parallel",
-  "StartAt": "RunBothPipelines",
+  "Comment": "Data Processing Workflow — apartments, plots and commercial in parallel",
+  "StartAt": "RunAllPipelines",
   "States": {
-    "RunBothPipelines": {
+    "RunAllPipelines": {
       "Type": "Parallel",
       "End": true,
       "Branches": [
@@ -198,6 +198,100 @@ resource "aws_sfn_state_machine" "data_processing_workflow" {
               ]
             }
           }
+        },
+        {
+          "StartAt": "IngestCommercial",
+          "States": {
+            "IngestCommercial": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${aws_lambda_function.commercial_ingestion_lambda.function_name}",
+                "Payload.$": "$"
+              },
+              "Next": "RunCommercialIngestionCrawler"
+            },
+            "RunCommercialIngestionCrawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Parameters": {
+                "Name": "${aws_glue_crawler.commercial_ingestions_crawler.name}"
+              },
+              "Next": "WaitCommercialCrawler"
+            },
+            "WaitCommercialCrawler": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "CheckCommercialCrawler"
+            },
+            "CheckCommercialCrawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+              "Parameters": {
+                "Name": "${aws_glue_crawler.commercial_ingestions_crawler.name}"
+              },
+              "Next": "CommercialCrawlerStatusChoice"
+            },
+            "CommercialCrawlerStatusChoice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Crawler.State",
+                  "StringEquals": "RUNNING",
+                  "Next": "WaitCommercialCrawler"
+                }
+              ],
+              "Default": "StartCommercialGlueJob"
+            },
+            "StartCommercialGlueJob": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "${aws_glue_job.commercial_feature_engineering.name}"
+              },
+              "Next": "RunCommercialFinalCrawlers"
+            },
+            "RunCommercialFinalCrawlers": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [
+                {
+                  "StartAt": "RunCommercialDimCrawler",
+                  "States": {
+                    "RunCommercialDimCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "commercial_dim"},
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "RunCommercialPriceFactCrawler",
+                  "States": {
+                    "RunCommercialPriceFactCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "commercial_price_fact"},
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "RunCommercialMarketSummaryCrawler",
+                  "States": {
+                    "RunCommercialMarketSummaryCrawler": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+                      "Parameters": {"Name": "commercial_market_summary"},
+                      "End": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
         }
       ]
     }
@@ -282,7 +376,8 @@ resource "aws_iam_role_policy" "step_function_policy" {
         Effect = "Allow",
         Resource = [
           aws_lambda_function.ingestion_lambda.arn,
-          aws_lambda_function.plots_ingestion_lambda.arn
+          aws_lambda_function.plots_ingestion_lambda.arn,
+          aws_lambda_function.commercial_ingestion_lambda.arn
         ]
       },
       {

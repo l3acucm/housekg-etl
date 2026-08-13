@@ -16,14 +16,14 @@ def handler(event, context):
     bucket_name = os.environ.get("BUCKET_NAME", "unset_bucket_name_var")
     crawler_name = os.environ.get("CRAWLER_NAME", "unset_crawler_name_var")
     file_name_prefix = os.environ.get("FILE_NAME_PREFIX", "unset_file_name_var")
-    url = "https://www.house.kg/search-map?lat1=42.529879066020332&lon1=74.01283264160158&lat2=43.096546175778314&lon2=75.08399963378908&filter=%7B%22type_id%22%3A%7B%22operator%22%3A%22in%22%2C%22value%22%3A%5B%221%22%5D%7D%2C%22category%22%3A%7B%22operator%22%3A%22%3D%22%2C%22value%22%3A%225%22%7D%2C%22region%22%3A%7B%22operator%22%3A%22%3D%22%2C%22value%22%3A%221%22%7D%2C%22document%22%3A%7B%22operator%22%3A%22in%22%2C%22value%22%3A%5B%221%22%2C%222%22%2C%226%22%2C%227%22%2C%228%22%5D%7D%7D&disable_groups=1&offset=0&page=1&mobile_view=0"
+    url = "https://www.house.kg/search-map?lat1=42.529879066020332&lon1=74.01283264160158&lat2=43.096546175778314&lon2=75.08399963378908&filter=%7B%22type_id%22%3A%7B%22operator%22%3A%22in%22%2C%22value%22%3A%5B%221%22%5D%7D%2C%22category%22%3A%7B%22operator%22%3A%22%3D%22%2C%22value%22%3A%223%22%7D%7D&disable_groups=1&offset=0&page=1&mobile_view=0"
     headers = {'X-Requested-With': 'XMLHttpRequest'}
     timestamp = datetime.now().strftime("%d%m%Y")
     file_name = f"{file_name_prefix}-{timestamp}.json"
-    file_key = f"ingestions_plots/{file_name}"
+    file_key = f"ingestions_commercial/{file_name}"
 
     try:
-        response = requests.get(url, headers=headers, timeout=30)
+        response = requests.get(url, headers=headers, timeout=60)
         response.raise_for_status()
         data = response.json()['list']
 
@@ -44,7 +44,7 @@ def handler(event, context):
         )
         return {
             "statusCode": 200,
-            "body": json.dumps({"message": "Plots data ingested and crawler retargeted"})
+            "body": json.dumps({"message": "Commercial data ingested and crawler retargeted"})
         }
 
     except requests.RequestException as e:

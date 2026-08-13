@@ -70,12 +70,12 @@ def get_bronze_df():
                 "purpose",
                 F.when(has_construction & ~has_sown, F.lit("construction"))
                  .when(has_sown & ~has_construction, F.lit("sown"))
+                 .otherwise(F.lit("other"))
             )
             .dropDuplicates(["slug"])
             .filter(F.col("are_price") > 0)
             .filter(F.col("land_square") > 0)
             .filter(F.col("micro_district").isNotNull())
-            .filter(F.col("purpose").isNotNull())
             )
 
 

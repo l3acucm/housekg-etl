@@ -17,6 +17,13 @@ resource "aws_s3_object" "plots_feature_engineering_script" {
   etag   = filebase64sha256("../etl/jobs/glue/plots_feature_engineering.py")
 }
 
+resource "aws_s3_object" "commercial_feature_engineering_script" {
+  bucket = aws_s3_bucket.data_bucket.bucket
+  key    = "etl/commercial_feature_engineering.py"
+  source = "../etl/jobs/glue/commercial_feature_engineering.py"
+  etag   = filebase64sha256("../etl/jobs/glue/commercial_feature_engineering.py")
+}
+
 resource "aws_s3_object" "anomaly_correction_module" {
   bucket = aws_s3_bucket.data_bucket.bucket
   key    = "etl/anomaly_correction.py"
