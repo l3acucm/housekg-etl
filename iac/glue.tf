@@ -221,7 +221,7 @@ resource "aws_glue_job" "feature_engineering" {
     "--enable-metrics"                   = "true" # Enable metrics for job profiling
     "--enable-continuous-cloudwatch-log" = "true" # Enable continuous logging
     "--spark-event-logs-path"            = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/feature-engineering/spark-logs/"
-    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key}"
+    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key},s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.notify_module.key},s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.price_model_module.key}"
     "--MODEL_ID"                         = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     "--BEDROCK_REGION"                   = "us-east-1"
     "--MAX_LLM_CALLS"                    = "100"
@@ -334,7 +334,7 @@ resource "aws_glue_job" "plots_feature_engineering" {
     "--enable-metrics"                   = "true"
     "--enable-continuous-cloudwatch-log" = "true"
     "--spark-event-logs-path"            = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/plots-feature-engineering/spark-logs/"
-    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key}"
+    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key},s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.price_model_module.key}"
     "--MODEL_ID"                         = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     "--BEDROCK_REGION"                   = "us-east-1"
     "--MAX_LLM_CALLS"                    = "100"
@@ -446,7 +446,7 @@ resource "aws_glue_job" "commercial_feature_engineering" {
     "--enable-metrics"                   = "true"
     "--enable-continuous-cloudwatch-log" = "true"
     "--spark-event-logs-path"            = "s3://${aws_s3_bucket.data_bucket.id}/house-etl/commercial-feature-engineering/spark-logs/"
-    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key}"
+    "--extra-py-files"                   = "s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.anomaly_correction_module.key},s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.notify_module.key},s3://${aws_s3_bucket.data_bucket.id}/${aws_s3_object.price_model_module.key}"
     "--MODEL_ID"                         = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     "--BEDROCK_REGION"                   = "us-east-1"
     "--MAX_LLM_CALLS"                    = "100"

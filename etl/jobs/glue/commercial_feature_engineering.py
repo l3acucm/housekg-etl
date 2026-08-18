@@ -7,8 +7,20 @@ from awsglue.utils import getResolvedOptions
 from datetime import datetime
 import boto3
 
-from anomaly_correction import flag_anomalies, correct_anomalies_with_haiku
+from anomaly_correction import (
+    flag_anomalies,
+    correct_anomalies_with_haiku,
+    flag_keyword_candidates,
+    classify_with_haiku,
+    LEASE_RIGHTS_PATTERN,
+    LEASE_RIGHTS_SYSTEM_PROMPT,
+    LEASE_RIGHTS_QUESTION_KEY,
+    BASEMENT_PATTERN,
+    BASEMENT_SYSTEM_PROMPT,
+    BASEMENT_QUESTION_KEY,
+)
 from notify import find_new_rows, send_webhook
+from price_model import add_expected_price, adjust_expected_price_for_flag
 
 glue_context = GlueContext(SparkContext())
 args = getResolvedOptions(sys.argv, ['BUCKET', 'MODEL_ID', 'BEDROCK_REGION', 'MAX_LLM_CALLS', 'WEBHOOK_URL'])
@@ -19,6 +31,12 @@ max_llm_calls = int(args['MAX_LLM_CALLS'])
 webhook_url = args['WEBHOOK_URL']
 logger = glue_context.get_logger()
 spark = glue_context.spark_session
+
+# Keyword-flagged candidates (lease-rights, basement) are cheap yes/no Haiku calls,
+# not the more involved anomaly correction — cap separately and higher; a batch can
+# easily have 100+ genuine "цоколь" mentions and MAX_LLM_CALLS is tuned for the
+# anomaly-correction path.
+_KEYWORD_CLASSIFY_MAX_CALLS = 300
 
 silver_key = "silver"
 glue_database_name = "realty_data"
@@ -163,7 +181,7 @@ def apply_anomaly_corrections(df: DataFrame) -> DataFrame:
         ))
     corr_df = spark.createDataFrame(corr_rows, corr_schema)
 
-    return (
+    corrected = (
         flagged.join(corr_df, ["slug"], "left")
         .withColumn("square_original", F.col("square"))
         .withColumn("price_original", F.col("price_usd"))
@@ -176,8 +194,62 @@ def apply_anomaly_corrections(df: DataFrame) -> DataFrame:
             F.when(F.col("square") > 0, F.col("price_usd") / F.col("square"))
             .otherwise(F.col("sqm_price")),
         )
-        .drop("corr_square", "corr_price_usd", "is_anomaly", "description", "price_usd")
+        .drop("corr_square", "corr_price_usd", "is_anomaly", "price_usd")
     )
+
+    corrected = filter_lease_right_sales(corrected)
+    corrected = flag_basements(corrected)
+
+    return corrected.drop("description")
+
+
+def filter_lease_right_sales(df: DataFrame) -> DataFrame:
+    """Drop rows where the description confirms this is a lease-right sale (переуступка
+    прав аренды), not a sale of the property itself — pollutes price comps if left in,
+    and price-based anomaly detection can't catch it (see module docstring in
+    anomaly_correction.py)."""
+    flagged = flag_keyword_candidates(df, pattern=LEASE_RIGHTS_PATTERN, out_col="_lease_candidate")
+    candidate_rows = flagged.filter(F.col("_lease_candidate")).select("slug", "description").collect()
+
+    confirmed = set()
+    if candidate_rows:
+        logger.info(f"Lease-right candidates flagged: {len(candidate_rows)}; invoking Bedrock (cap={_KEYWORD_CLASSIFY_MAX_CALLS})")
+        confirmed = classify_with_haiku(
+            [{"slug": r["slug"], "description": r["description"]} for r in candidate_rows],
+            system_prompt=LEASE_RIGHTS_SYSTEM_PROMPT,
+            question_key=LEASE_RIGHTS_QUESTION_KEY,
+            model_id=model_id,
+            region=bedrock_region,
+            max_calls=_KEYWORD_CLASSIFY_MAX_CALLS,
+        )
+
+    kept = flagged.filter(~F.col("slug").isin(list(confirmed))) if confirmed else flagged
+    return kept.drop("_lease_candidate")
+
+
+def flag_basements(df: DataFrame) -> DataFrame:
+    """Adds boolean `is_basement` (цоколь/полуподвал) from the description — the
+    structured `floor` field is often null and never distinguishes a basement level
+    from a normal one anyway. `price_model.adjust_expected_price_for_flag` uses this
+    to correct for the floor-level discount kNN's geographic neighbors can't see."""
+    flagged = flag_keyword_candidates(df, pattern=BASEMENT_PATTERN, out_col="_basement_candidate")
+    candidate_rows = flagged.filter(F.col("_basement_candidate")).select("slug", "description").collect()
+
+    confirmed = set()
+    if candidate_rows:
+        logger.info(f"Basement candidates flagged: {len(candidate_rows)}; invoking Bedrock (cap={_KEYWORD_CLASSIFY_MAX_CALLS})")
+        confirmed = classify_with_haiku(
+            [{"slug": r["slug"], "description": r["description"]} for r in candidate_rows],
+            system_prompt=BASEMENT_SYSTEM_PROMPT,
+            question_key=BASEMENT_QUESTION_KEY,
+            model_id=model_id,
+            region=bedrock_region,
+            max_calls=_KEYWORD_CLASSIFY_MAX_CALLS,
+        )
+
+    confirmed_list = list(confirmed)
+    is_basement = F.col("slug").isin(confirmed_list) if confirmed_list else F.lit(False)
+    return flagged.withColumn("is_basement", is_basement).drop("_basement_candidate")
 
 
 def apply_strict_filters(df: DataFrame) -> DataFrame:
@@ -386,7 +458,11 @@ def main():
     cleaned_df_bronze = apply_strict_filters(corrected_df)
     cleaned_df_bronze.cache()
 
-    commercial_dim_df = cleaned_df_bronze.drop("sqm_price")
+    scored_df = add_expected_price(cleaned_df_bronze, price_col="sqm_price")
+    scored_df = adjust_expected_price_for_flag(scored_df, price_col="sqm_price", flag_col="is_basement")
+    scored_df.cache()
+
+    commercial_dim_df = scored_df.drop("sqm_price", "expected_price", "price_vs_expected_pct")
     commercial_dim_df.write.mode("overwrite").parquet(commercial_dim_table_s3_uri)
 
     new_rows = find_new_rows(spark, price_fact_s3_uri, cleaned_df_bronze.select("slug", "square", "sqm_price"))
@@ -401,8 +477,14 @@ def main():
     update_scd2_table(
         key_fields=[T.StructField("slug", T.StringType(), False)],
         parquet_path=price_fact_s3_uri,
-        compared_fields=[T.StructField("sqm_price", T.DoubleType(), False)],
-        comparison_df=cleaned_df_bronze.select("slug", "sqm_price", F.col("updated_at").alias("timestamp")),
+        compared_fields=[
+            T.StructField("sqm_price", T.DoubleType(), False),
+            T.StructField("expected_price", T.DoubleType(), True),
+            T.StructField("price_vs_expected_pct", T.DoubleType(), True),
+        ],
+        comparison_df=scored_df.select(
+            "slug", "sqm_price", "expected_price", "price_vs_expected_pct", F.col("updated_at").alias("timestamp")
+        ),
         partition_col="is_current"
     )
 

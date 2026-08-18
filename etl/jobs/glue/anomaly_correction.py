@@ -1,7 +1,6 @@
 import json
 import logging
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional, Sequence
 
 import boto3
@@ -134,13 +133,13 @@ def _extract_json(text: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _invoke_haiku(client, model_id: str, user_message: str) -> str:
+def _invoke_haiku(client, model_id: str, user_message: str, system_prompt: str = _SYSTEM_PROMPT) -> str:
     body = json.dumps(
         {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 400,
             "temperature": 0.0,
-            "system": _SYSTEM_PROMPT,
+            "system": system_prompt,
             "messages": [{"role": "user", "content": user_message}],
         }
     )
@@ -157,12 +156,20 @@ def correct_anomalies_with_haiku(
     model_id: str,
     region: str,
     max_calls: int = 100,
-    max_workers: int = 8,
 ) -> Dict[str, Dict[str, Any]]:
-    """Call Bedrock Haiku once per anomalous row from the driver. Returns {slug: parsed_json}.
+    """Call Bedrock Haiku once per anomalous row from the driver, sequentially. Returns
+    {slug: parsed_json}.
 
     Hard-caps at `max_calls`; excess anomalies are logged and skipped (no correction applied).
     Rows without a usable description are skipped silently.
+
+    Sequential on purpose, not a ThreadPoolExecutor: concurrent boto3 bedrock-runtime
+    calls from this driver segfaulted the Glue job (exit 139, no Python traceback,
+    right after this function's first log line) on 2026-08-16 and 2026-08-18 — both
+    times with a decent-sized anomaly batch (86-94 rows) hitting a shared client from
+    8 threads. Root cause of the native crash itself wasn't pinned down further; going
+    sequential removes the concurrency entirely rather than gambling on a lower
+    thread count. At ~100 calls/batch this is still well under the job timeout.
     """
     if not rows:
         return {}
@@ -195,11 +202,117 @@ def correct_anomalies_with_haiku(
             return slug, None
 
     out: Dict[str, Dict[str, Any]] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        for fut in as_completed([ex.submit(task, r) for r in capped]):
-            slug, parsed = fut.result()
-            if parsed:
-                out[slug] = parsed
+    for r in capped:
+        slug, parsed = task(r)
+        if parsed:
+            out[slug] = parsed
 
     logger.info("Bedrock corrections: requested=%d, returned=%d", len(capped), len(out))
     return out
+
+
+# --- Generic keyword-flag + LLM-classify pair -------------------------------------
+# Shared by any "structured fields can't say this, only the free-text description
+# can" classification: currently lease-right sales and basement-level units. Price-
+# based anomaly detection (flag_anomalies) can't catch either — both often have a
+# perfectly plausible sqm_price, it's a categorical fact about the listing that's
+# wrong/missing, not a bad number.
+
+def flag_keyword_candidates(df: DataFrame, *, pattern: str, out_col: str, description_col: str = "description") -> DataFrame:
+    """Cheap regex pre-filter over `description_col`, adds boolean `out_col`. Not
+    authoritative on its own — sellers use these words in unrelated asides too (e.g.
+    mentioning a competing offer) — confirm with `classify_with_haiku` before acting
+    on it.
+
+    Lowercases before matching instead of relying on an inline `(?i)` regex flag —
+    `rlike` runs on the JVM, and Java's CASE_INSENSITIVE flag is ASCII-only unless
+    paired with UNICODE_CASE, so `(?i)` silently fails to fold Cyrillic case (a real
+    miss: "Цокольный этаж" at a sentence start didn't match a "цоколь" pattern).
+    `pattern` must be lowercase.
+    """
+    return df.withColumn(
+        out_col,
+        F.lower(F.coalesce(F.col(description_col), F.lit(""))).rlike(pattern),
+    )
+
+
+def classify_with_haiku(
+    rows: List[Dict[str, Any]],
+    *,
+    system_prompt: str,
+    question_key: str,
+    model_id: str,
+    region: str,
+    max_calls: int = 100,
+) -> set:
+    """rows: [{"slug", "description"}] — keyword candidates only, not every listing.
+    Asks Haiku a yes/no question (`question_key` in the returned JSON) per row.
+    Returns the set of slugs Haiku answered `true` for. Same call-capping/skip rules
+    and sequential-not-threaded reasoning as `correct_anomalies_with_haiku`."""
+    if not rows:
+        return set()
+
+    eligible = [r for r in rows if (r.get("description") or "").strip()]
+    capped = eligible[:max_calls]
+    if len(rows) > max_calls:
+        logger.warning(
+            "Classification cap reached: %d candidates exceed cap of %d; skipping %d.",
+            len(rows), max_calls, len(rows) - max_calls,
+        )
+
+    client = boto3.client("bedrock-runtime", region_name=region)
+
+    def task(row: Dict[str, Any]):
+        slug = row["slug"]
+        try:
+            desc = (row["description"] or "")[:3000]
+            msg = (
+                f"Seller's description:\n\"\"\"\n{desc}\n\"\"\"\n\n"
+                f"Respond with ONLY this JSON object (no markdown, no prose):\n"
+                f"{{\n"
+                f'  "{question_key}": <true or false>,\n'
+                f'  "confidence": "high" | "medium" | "low"\n'
+                f"}}"
+            )
+            text = _invoke_haiku(client, model_id, msg, system_prompt=system_prompt)
+            parsed = _extract_json(text)
+            return slug, bool(parsed and parsed.get(question_key))
+        except Exception as exc:
+            logger.warning("Bedrock classification call failed for slug=%s: %s", slug, exc)
+            return slug, False
+
+    confirmed = set()
+    for r in capped:
+        slug, is_match = task(r)
+        if is_match:
+            confirmed.add(slug)
+
+    logger.info("Classification (%s): checked=%d, confirmed=%d", question_key, len(capped), len(confirmed))
+    return confirmed
+
+
+# Legal terms for "selling the lease, not the property" — переуступка/цессия of a
+# lease is a different asset than the property itself and pollutes price comps if
+# left in.
+LEASE_RIGHTS_PATTERN = r"(право\s+аренды|переуступ|уступк[а-я]*\s+прав|цесси[яю])"
+LEASE_RIGHTS_SYSTEM_PROMPT = (
+    "You read Kyrgyz commercial real-estate listing descriptions (Russian/Kyrgyz/"
+    "English). Decide whether the seller is selling the PROPERTY ITSELF (ownership) "
+    "or selling LEASE RIGHTS (переуступка прав аренды / право аренды / цессия — the "
+    "seller only holds a lease and is transferring that lease, not the underlying "
+    "real estate). Respond with strict JSON only — no markdown, no prose."
+)
+LEASE_RIGHTS_QUESTION_KEY = "is_lease_right_sale"
+
+# Terms for a basement/semi-basement unit — legitimately cheaper per m² than an
+# above-ground floor, but the structured `floor` field is often null or just doesn't
+# distinguish "цоколь" from a normal ground floor.
+BASEMENT_PATTERN = r"(цоколь|полуподвал|подвальн)"
+BASEMENT_SYSTEM_PROMPT = (
+    "You read Kyrgyz real-estate listing descriptions (Russian/Kyrgyz/English). "
+    "Decide whether the unit is on a BASEMENT or SEMI-BASEMENT level (цоколь / "
+    "цокольный этаж / полуподвал / подвальное помещение) as opposed to a normal "
+    "ground or above-ground floor. Respond with strict JSON only — no markdown, no "
+    "prose."
+)
+BASEMENT_QUESTION_KEY = "is_basement"

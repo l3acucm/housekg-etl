@@ -8,6 +8,7 @@ from datetime import datetime
 import boto3
 
 from anomaly_correction import flag_anomalies, correct_anomalies_with_haiku
+from price_model import add_expected_price
 
 glue_context = GlueContext(SparkContext())
 args = getResolvedOptions(sys.argv, ['BUCKET', 'MODEL_ID', 'BEDROCK_REGION', 'MAX_LLM_CALLS'])
@@ -364,14 +365,23 @@ def main():
     cleaned_df_bronze = apply_strict_filters(corrected_df)
     cleaned_df_bronze.cache()
 
-    plots_dim_df = cleaned_df_bronze.drop("are_price")
+    scored_df = add_expected_price(cleaned_df_bronze, price_col="are_price")
+    scored_df.cache()
+
+    plots_dim_df = scored_df.drop("are_price", "expected_price", "price_vs_expected_pct")
     plots_dim_df.write.mode("overwrite").parquet(plots_dim_table_s3_uri)
 
     update_scd2_table(
         key_fields=[T.StructField("slug", T.StringType(), False)],
         parquet_path=price_fact_s3_uri,
-        compared_fields=[T.StructField("are_price", T.DoubleType(), False)],
-        comparison_df=cleaned_df_bronze.select("slug", "are_price", F.col("updated_at").alias("timestamp")),
+        compared_fields=[
+            T.StructField("are_price", T.DoubleType(), False),
+            T.StructField("expected_price", T.DoubleType(), True),
+            T.StructField("price_vs_expected_pct", T.DoubleType(), True),
+        ],
+        comparison_df=scored_df.select(
+            "slug", "are_price", "expected_price", "price_vs_expected_pct", F.col("updated_at").alias("timestamp")
+        ),
         partition_col="is_current"
     )
 

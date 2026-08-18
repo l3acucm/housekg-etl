@@ -30,3 +30,17 @@ resource "aws_s3_object" "anomaly_correction_module" {
   source = "../etl/jobs/glue/anomaly_correction.py"
   etag   = filebase64sha256("../etl/jobs/glue/anomaly_correction.py")
 }
+
+resource "aws_s3_object" "notify_module" {
+  bucket = aws_s3_bucket.data_bucket.bucket
+  key    = "etl/notify.py"
+  source = "../etl/jobs/glue/notify.py"
+  etag   = filebase64sha256("../etl/jobs/glue/notify.py")
+}
+
+resource "aws_s3_object" "price_model_module" {
+  bucket = aws_s3_bucket.data_bucket.bucket
+  key    = "etl/price_model.py"
+  source = "../etl/jobs/glue/price_model.py"
+  etag   = filebase64sha256("../etl/jobs/glue/price_model.py")
+}
