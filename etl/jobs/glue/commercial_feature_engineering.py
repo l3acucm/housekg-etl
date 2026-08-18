@@ -143,6 +143,7 @@ def get_bronze_rent_df():
         F.col('latitude'),
         F.col('prices')[1]['m2_price'].cast(T.DoubleType()).alias('sqm_price'),
         square_double.alias('square'),
+        F.col('description'),
     )
 
     return (
@@ -507,8 +508,10 @@ def main():
             T.StructField("latitude", T.DoubleType()),
             T.StructField("longitude", T.DoubleType()),
             T.StructField("sqm_price", T.DoubleType()),
+            T.StructField("description", T.StringType()),
         ]))
-    scored_df = nearest_cross_comps(scored_df, rent_df, price_col="sqm_price", k=3)
+    rent_df = flag_basements(rent_df).drop("description")
+    scored_df = nearest_cross_comps(scored_df, rent_df, price_col="sqm_price", k=3, match_col="is_basement")
     scored_df = (
         scored_df
         .withColumn(

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pyspark.sql import DataFrame, Window, functions as F
 
 _EARTH_RADIUS_KM = 6371.0
@@ -126,6 +128,7 @@ def nearest_cross_comps(
     k: int = 3,
     lat_col: str = "latitude",
     lon_col: str = "longitude",
+    match_col: Optional[str] = None,
 ) -> DataFrame:
     """For each row in `sale_df`, find its `k` geographically nearest rows in
     `comp_df` — a DIFFERENT dataset, unlike `add_expected_price`'s self-join, so no
@@ -133,10 +136,21 @@ def nearest_cross_comps(
     columns (ordered nearest-first) plus `avg_rent_sqm_price` (mean of the found
     comps' `price_col`).
 
+    `match_col`, if given, must name a column present (same type) on both `sale_df`
+    and `comp_df`; only comp rows with an equal value are eligible neighbors — e.g.
+    `match_col="is_basement"` so a basement listing's comps are other basements, not
+    geographically-close-but-categorically-different ones (a basement's raw geo
+    neighbors are mostly non-basement, same reasoning as `adjust_expected_price_for_flag`'s
+    docstring, but applied as a hard filter here rather than a post-hoc discount since
+    cross-dataset comps have no single-listing "own price" to anchor a factor to).
+
     All added columns are null for a sale row with null `lat_col`/`lon_col`, and for
     every sale row if `comp_df` has no rows with coordinates at all — same
     "degrades gracefully, no min-row guard" philosophy as `add_expected_price`; the
-    caller decides whether a null estimate is meaningful downstream.
+    caller decides whether a null estimate is meaningful downstream. With `match_col`
+    set, a sale row can also end up with fewer than `k` (or zero) comps if `comp_df`
+    doesn't have `k` matching-category rows nearby — same graceful degradation, just
+    narrowed to the matching category's pool.
     """
 
     def _null_comp_columns(df: DataFrame) -> DataFrame:
@@ -157,13 +171,17 @@ def nearest_cross_comps(
     sale_has_coords = sale_df.filter(F.col(lat_col).isNotNull() & F.col(lon_col).isNotNull())
     sale_no_coords = sale_df.filter(F.col(lat_col).isNull() | F.col(lon_col).isNull())
 
-    a = sale_has_coords.select("slug", lat_col, lon_col).alias("a")
-    b = comp_has_coords.select(
+    a_cols = ["slug", lat_col, lon_col] + ([match_col] if match_col else [])
+    a = sale_has_coords.select(*a_cols).alias("a")
+    b_cols = [
         F.col("slug").alias("b_slug"),
         F.col(lat_col).alias("b_lat"),
         F.col(lon_col).alias("b_lon"),
         F.col(price_col).cast("double").alias("b_price"),
-    )
+    ]
+    if match_col:
+        b_cols.append(F.col(match_col).alias("b_match"))
+    b = comp_has_coords.select(*b_cols)
 
     lat1, lat2 = F.radians(F.col(f"a.{lat_col}")), F.radians(F.col("b_lat"))
     dlat = lat2 - lat1
@@ -171,8 +189,12 @@ def nearest_cross_comps(
     hav = F.sin(dlat / 2) ** 2 + F.cos(lat1) * F.cos(lat2) * F.sin(dlon / 2) ** 2
     dist_km = F.lit(2 * _EARTH_RADIUS_KM) * F.asin(F.sqrt(hav))
 
+    pairs = a.crossJoin(b)
+    if match_col:
+        pairs = pairs.where(F.col(f"a.{match_col}") == F.col("b_match"))
+
     ranked = (
-        a.crossJoin(b)
+        pairs
         .withColumn("_dist", dist_km)
         .withColumn(
             "_rank",
