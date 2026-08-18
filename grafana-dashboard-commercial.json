@@ -2269,6 +2269,40 @@
           "kind": "TabsLayoutTab",
           "spec": {
             "layout": {
+              "kind": "AutoGridLayout",
+              "spec": {
+                "columnWidthMode": "standard",
+                "items": [
+                  {
+                    "kind": "AutoGridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-10"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "AutoGridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-11"
+                      }
+                    }
+                  }
+                ],
+                "maxColumnCount": 3,
+                "rowHeightMode": "standard"
+              }
+            },
+            "title": "Map"
+          }
+        },
+        {
+          "kind": "TabsLayoutTab",
+          "spec": {
+            "layout": {
               "kind": "GridLayout",
               "spec": {
                 "items": [
@@ -2379,40 +2413,6 @@
               }
             },
             "title": "List"
-          }
-        },
-        {
-          "kind": "TabsLayoutTab",
-          "spec": {
-            "layout": {
-              "kind": "AutoGridLayout",
-              "spec": {
-                "columnWidthMode": "standard",
-                "items": [
-                  {
-                    "kind": "AutoGridLayoutItem",
-                    "spec": {
-                      "element": {
-                        "kind": "ElementReference",
-                        "name": "panel-10"
-                      }
-                    }
-                  },
-                  {
-                    "kind": "AutoGridLayoutItem",
-                    "spec": {
-                      "element": {
-                        "kind": "ElementReference",
-                        "name": "panel-11"
-                      }
-                    }
-                  }
-                ],
-                "maxColumnCount": 3,
-                "rowHeightMode": "standard"
-              }
-            },
-            "title": "Map"
           }
         }
       ]
