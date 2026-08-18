@@ -3118,7 +3118,7 @@
           "value": ""
         },
         "description": "Slug of the sale object clicked on the map; empty = show all",
-        "hide": "",
+        "hide": "inControlsMenu",
         "label": "Selected object",
         "name": "selected_slug",
         "query": "",
