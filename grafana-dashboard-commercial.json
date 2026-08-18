@@ -192,12 +192,39 @@
                         "resultReuseMaxAgeInMinutes": 60
                       },
                       "format": 1,
-                      "rawSQL": "WITH current AS (\n    SELECT\n        r.micro_district,\n        r.commercial_type,\n        r.slug AS slug,\n        r.square,\n        r.land_square,\n        r.latitude,\n        r.longitude,\n        f.sqm_price * r.square AS price,\n        ROUND(f.sqm_price) AS fact_sqm_price,\n        ROUND(f.expected_price) AS fact_expected_sqm_price,\n        ROUND(f.price_vs_expected_pct, 1) AS price_vs_expected_pct\n    FROM commercial_price_fact f\n    JOIN commercial_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = true\n        AND r.micro_district IN (${district:csv})\n        AND r.commercial_type IN (${commercial_type:singlequote})\n        AND r.square BETWEEN ${square_min} AND ${square_max}\n        AND (r.land_square IS NULL OR r.land_square BETWEEN ${land_square_min} AND ${land_square_max})\n        AND (r.floor IS NULL OR r.floor BETWEEN ${floor_min} AND ${floor_max})\n        AND (r.floors IS NULL OR r.floors BETWEEN ${floors_min} AND ${floors_max})\n        AND (r.year IS NULL OR r.year BETWEEN ${year_min} AND ${year_max})\n        AND f.sqm_price BETWEEN ${sqm_price_min} AND ${sqm_price_max}\n)\nSELECT\n    c.latitude,\n    c.longitude,\n    c.slug,\n    c.micro_district,\n    c.commercial_type,\n    c.square,\n    c.fact_sqm_price,\n    c.fact_expected_sqm_price,\n    c.price_vs_expected_pct,\n    c.price\nFROM current c\nWHERE c.price_vs_expected_pct IS NOT NULL\nORDER BY price_vs_expected_pct ASC;\n",
+                      "rawSQL": "WITH current AS (\n    SELECT\n        r.micro_district,\n        r.commercial_type,\n        r.slug AS slug,\n        r.square,\n        r.land_square,\n        r.latitude,\n        r.longitude,\n        f.sqm_price * r.square AS price,\n        ROUND(f.sqm_price) AS fact_sqm_price,\n        ROUND(f.expected_price) AS fact_expected_sqm_price,\n        ROUND(f.price_vs_expected_pct, 1) AS price_vs_expected_pct,\n        f.payback_months,\n        f.monthly_yield_pct,\n        f.est_monthly_rent\n    FROM commercial_price_fact f\n    JOIN commercial_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = true\n        AND r.micro_district IN (${district:csv})\n        AND r.commercial_type IN (${commercial_type:singlequote})\n        AND r.square BETWEEN ${square_min} AND ${square_max}\n        AND (r.land_square IS NULL OR r.land_square BETWEEN ${land_square_min} AND ${land_square_max})\n        AND (r.floor IS NULL OR r.floor BETWEEN ${floor_min} AND ${floor_max})\n        AND (r.floors IS NULL OR r.floors BETWEEN ${floors_min} AND ${floors_max})\n        AND (r.year IS NULL OR r.year BETWEEN ${year_min} AND ${year_max})\n        AND f.sqm_price BETWEEN ${sqm_price_min} AND ${sqm_price_max}\n)\nSELECT\n    c.latitude,\n    c.longitude,\n    c.slug,\n    c.micro_district,\n    c.commercial_type,\n    c.square,\n    c.fact_sqm_price,\n    c.fact_expected_sqm_price,\n    c.price_vs_expected_pct,\n    c.price,\n    c.payback_months,\n    c.monthly_yield_pct,\n    c.est_monthly_rent\nFROM current c\nWHERE (${selected_slug} = '' OR c.slug = '${selected_slug}')\nORDER BY price_vs_expected_pct ASC;\n",
                       "table": "commercial_price_fact"
                     },
                     "version": "v0"
                   },
                   "refId": "A"
+                }
+              },
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "afgo4scn4wu0wa"
+                    },
+                    "group": "grafana-athena-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                      },
+                      "format": 1,
+                      "rawSQL": "SELECT comp1_lat AS latitude, comp1_lon AS longitude, comp1_slug AS slug, comp1_rent_sqm_price AS rent_sqm_price FROM commercial_price_fact WHERE is_current = true AND slug = '${selected_slug}' AND comp1_slug IS NOT NULL\nUNION ALL\nSELECT comp2_lat, comp2_lon, comp2_slug, comp2_rent_sqm_price FROM commercial_price_fact WHERE is_current = true AND slug = '${selected_slug}' AND comp2_slug IS NOT NULL\nUNION ALL\nSELECT comp3_lat, comp3_lon, comp3_slug, comp3_rent_sqm_price FROM commercial_price_fact WHERE is_current = true AND slug = '${selected_slug}' AND comp3_slug IS NOT NULL;\n",
+                      "table": "commercial_price_fact"
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "B"
                 }
               }
             ],
@@ -229,28 +256,28 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "purple",
+                      "color": "dark-green",
                       "value": 0
                     },
                     {
-                      "color": "dark-green",
-                      "value": -50
+                      "color": "green",
+                      "value": 61
                     },
                     {
                       "color": "yellow",
-                      "value": -17
+                      "value": 73
                     },
                     {
                       "color": "orange",
-                      "value": 17
+                      "value": 85
                     },
                     {
                       "color": "red",
-                      "value": 50
+                      "value": 97
                     },
                     {
-                      "color": "brown",
-                      "value": 50.01
+                      "color": "dark-red",
+                      "value": 109
                     }
                   ]
                 }
@@ -269,6 +296,11 @@
                           "targetBlank": true,
                           "title": "View Details",
                           "url": "https://house.kg/details/${__value.raw}"
+                        },
+                        {
+                          "targetBlank": false,
+                          "title": "Show yield & comps",
+                          "url": "?var-selected_slug=${__value.raw}"
                         }
                       ]
                     }
@@ -296,7 +328,7 @@
                     "showLegend": true,
                     "style": {
                       "color": {
-                        "field": "price_vs_expected_pct",
+                        "field": "payback_months",
                         "fixed": "dark-green"
                       },
                       "opacity": 0.8,
@@ -315,6 +347,36 @@
                     "mode": "auto"
                   },
                   "name": "Listings",
+                  "tooltip": true,
+                  "type": "markers"
+                },
+                {
+                  "config": {
+                    "showLegend": true,
+                    "style": {
+                      "color": {
+                        "fixed": "blue"
+                      },
+                      "opacity": 0.8,
+                      "size": {
+                        "fixed": 6,
+                        "max": 6,
+                        "min": 6
+                      },
+                      "symbol": {
+                        "fixed": "img/icons/marker/square.svg",
+                        "mode": "fixed"
+                      }
+                    }
+                  },
+                  "filterData": {
+                    "id": "byFrameRefID",
+                    "options": "B"
+                  },
+                  "location": {
+                    "mode": "auto"
+                  },
+                  "name": "Rental comps",
                   "tooltip": true,
                   "type": "markers"
                 }
@@ -2090,6 +2152,90 @@
           "version": "13.1.2"
         }
       }
+    },
+    "panel-11": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "afgo4scn4wu0wa"
+                    },
+                    "group": "grafana-athena-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                      },
+                      "format": 1,
+                      "rawSQL": "SELECT ROUND(payback_months, 1) AS \"Payback (months)\", ROUND(monthly_yield_pct, 2) AS \"Monthly yield (%)\", ROUND(est_monthly_rent) AS \"Est. monthly rent (USD)\" FROM commercial_price_fact WHERE is_current = true AND slug = '${selected_slug}';\n",
+                      "table": "commercial_price_fact"
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "Payback/yield for the selected object, estimated from its 3 nearest rental comps",
+        "id": 11,
+        "links": [],
+        "title": "Доходность",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": 0
+                    }
+                  ]
+                },
+                "unit": "none"
+              },
+              "overrides": []
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "auto",
+              "orientation": "auto",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "textMode": "auto"
+            }
+          },
+          "version": "13.1.2"
+        }
+      }
     }
   },
   "layout": {
@@ -2180,6 +2326,19 @@
                       "x": 0,
                       "y": 18
                     }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-11"
+                      },
+                      "height": 5,
+                      "width": 12,
+                      "x": 12,
+                      "y": 18
+                    }
                   }
                 ]
               }
@@ -2240,7 +2399,20 @@
       ]
     }
   },
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Показать все объекты",
+      "tooltip": "",
+      "type": "link",
+      "url": "?var-selected_slug="
+    }
+  ],
   "liveNow": false,
   "preload": false,
   "tags": [],
@@ -2939,6 +3111,21 @@
         "label": "Sqm price, max",
         "name": "sqm_price_max",
         "query": "6000",
+        "skipUrlSync": false
+      }
+    },
+    {
+      "kind": "TextVariable",
+      "spec": {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "description": "Slug of the sale object clicked on the map; empty = show all",
+        "hide": "",
+        "label": "Selected object",
+        "name": "selected_slug",
+        "query": "",
         "skipUrlSync": false
       }
     }
