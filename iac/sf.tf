@@ -242,6 +242,48 @@ resource "aws_sfn_state_machine" "data_processing_workflow" {
                   "Next": "WaitCommercialCrawler"
                 }
               ],
+              "Default": "IngestCommercialRent"
+            },
+            "IngestCommercialRent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${aws_lambda_function.commercial_rent_ingestion_lambda.function_name}",
+                "Payload.$": "$"
+              },
+              "Next": "RunCommercialRentIngestionCrawler"
+            },
+            "RunCommercialRentIngestionCrawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Parameters": {
+                "Name": "${aws_glue_crawler.commercial_rent_ingestions_crawler.name}"
+              },
+              "Next": "WaitCommercialRentCrawler"
+            },
+            "WaitCommercialRentCrawler": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "CheckCommercialRentCrawler"
+            },
+            "CheckCommercialRentCrawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+              "Parameters": {
+                "Name": "${aws_glue_crawler.commercial_rent_ingestions_crawler.name}"
+              },
+              "Next": "CommercialRentCrawlerStatusChoice"
+            },
+            "CommercialRentCrawlerStatusChoice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Crawler.State",
+                  "StringEquals": "RUNNING",
+                  "Next": "WaitCommercialRentCrawler"
+                }
+              ],
               "Default": "StartCommercialGlueJob"
             },
             "StartCommercialGlueJob": {
@@ -377,7 +419,8 @@ resource "aws_iam_role_policy" "step_function_policy" {
         Resource = [
           aws_lambda_function.ingestion_lambda.arn,
           aws_lambda_function.plots_ingestion_lambda.arn,
-          aws_lambda_function.commercial_ingestion_lambda.arn
+          aws_lambda_function.commercial_ingestion_lambda.arn,
+          aws_lambda_function.commercial_rent_ingestion_lambda.arn
         ]
       },
       {
