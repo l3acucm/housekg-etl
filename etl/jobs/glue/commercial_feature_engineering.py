@@ -511,11 +511,6 @@ def main():
             T.StructField("description", T.StringType()),
         ]))
     rent_df = flag_basements(rent_df).drop("description")
-    rent_df.cache()
-    logger.info(
-        "Rent is_basement distribution: "
-        f"{[r.asDict() for r in rent_df.groupBy('is_basement').count().collect()]}"
-    )
     scored_df = nearest_cross_comps(scored_df, rent_df, price_col="sqm_price", k=3, match_col="is_basement")
     scored_df = (
         scored_df

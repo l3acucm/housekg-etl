@@ -248,11 +248,19 @@ def classify_with_haiku(
     """rows: [{"slug", "description"}] — keyword candidates only, not every listing.
     Asks Haiku a yes/no question (`question_key` in the returned JSON) per row.
     Returns the set of slugs Haiku answered `true` for. Same call-capping/skip rules
-    and sequential-not-threaded reasoning as `correct_anomalies_with_haiku`."""
+    and sequential-not-threaded reasoning as `correct_anomalies_with_haiku`.
+
+    Rows with no `slug` are skipped, not just rows with no description: every caller
+    feeds the returned set into `col("slug").isin(confirmed)` downstream, and a single
+    `None` slug in that set silently turns `isin()` into SQL's 3-valued NULL for every
+    non-matching row instead of False — this bit the commercial rent basement-matching
+    feature (all non-basement rentals came back `is_basement=None`, not `False`, so
+    `a.is_basement == b.is_basement` excluded every non-basement pairing and only
+    basements ever matched)."""
     if not rows:
         return set()
 
-    eligible = [r for r in rows if (r.get("description") or "").strip()]
+    eligible = [r for r in rows if r.get("slug") and (r.get("description") or "").strip()]
     capped = eligible[:max_calls]
     if len(rows) > max_calls:
         logger.warning(
