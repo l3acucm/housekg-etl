@@ -2410,7 +2410,7 @@
     }
   ],
   "liveNow": false,
-  "preload": false,
+  "preload": true,
   "tags": [],
   "timeSettings": {
     "autoRefresh": "",
