@@ -423,6 +423,24 @@ resource "aws_glue_crawler" "commercial_ingestions_crawler" {
   })
 }
 
+resource "aws_glue_crawler" "commercial_rent_ingestions_crawler" {
+  name          = "commercial_rent_ingestions_crawler"
+  role          = aws_iam_role.glue_crawler_role.arn
+  database_name = aws_glue_catalog_database.data_db.name
+  classifiers   = [aws_glue_classifier.housekg_json_classifier.name]
+
+  s3_target {
+    path = "s3://${aws_s3_bucket.data_bucket.bucket}/ingestions_commercial_rent/"
+  }
+
+  configuration = jsonencode({
+    Version = 1.0
+    CrawlerOutput = {
+      Tables = { AddOrUpdateBehavior = "MergeNewColumns" }
+    }
+  })
+}
+
 resource "aws_glue_job" "commercial_feature_engineering" {
   name              = "commercial_feature_engineering"
   role_arn          = aws_iam_role.glue_job_role.arn
