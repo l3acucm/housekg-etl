@@ -280,7 +280,8 @@
               "basemap": {
                 "config": {},
                 "name": "Basemap",
-                "type": "default"
+                "type": "osm-standard",
+                "noRepeat": false
               },
               "controls": {
                 "mouseWheelZoom": true,

@@ -300,7 +300,7 @@
                         {
                           "targetBlank": false,
                           "title": "Show yield & comps",
-                          "url": "?var-selected_slug=${__value.raw}"
+                          "url": "?${district:queryparam}&${commercial_type:queryparam}&${square_min:queryparam}&${square_max:queryparam}&${land_square_min:queryparam}&${land_square_max:queryparam}&${floor_min:queryparam}&${floor_max:queryparam}&${floors_min:queryparam}&${floors_max:queryparam}&${year_min:queryparam}&${year_max:queryparam}&${sqm_price_min:queryparam}&${sqm_price_max:queryparam}&var-selected_slug=${__value.raw}"
                         }
                       ]
                     }
@@ -426,7 +426,7 @@
                         "resultReuseMaxAgeInMinutes": 60
                       },
                       "format": 1,
-                      "rawSQL": "SELECT\n  ROUND(payback_months, 1) AS \"Payback (months)\",\n  ROUND((SELECT avg(x) FROM UNNEST(ARRAY[comp1_rent_sqm_price, comp2_rent_sqm_price, comp3_rent_sqm_price]) AS t(x)), 2) AS \"Rent (USD/m2)\",\n  ROUND(est_monthly_rent) AS \"Est. monthly rent (USD)\"\nFROM commercial_price_fact\nWHERE is_current = true AND slug = '${selected_slug}';\n",
+                      "rawSQL": "SELECT\n  r.slug AS \"Listing\",\n  ROUND(r.square) AS \"Area (m2)\",\n  ROUND(f.sqm_price * r.square) AS \"Price (USD)\",\n  ROUND(f.payback_months, 1) AS \"Payback (months)\",\n  ROUND((SELECT avg(x) FROM UNNEST(ARRAY[f.comp1_rent_sqm_price, f.comp2_rent_sqm_price, f.comp3_rent_sqm_price]) AS t(x)), 2) AS \"Rent (USD/m2)\",\n  ROUND(f.est_monthly_rent) AS \"Est. monthly rent (USD)\"\nFROM commercial_price_fact f\nJOIN commercial_dim r ON f.slug = r.slug\nWHERE f.is_current = true AND f.slug = '${selected_slug}';\n",
                       "table": "commercial_price_fact"
                     },
                     "version": "v0"
@@ -467,16 +467,16 @@
                 {
                   "matcher": {
                     "id": "byName",
-                    "options": "Payback (months)"
+                    "options": "Listing"
                   },
                   "properties": [
                     {
                       "id": "links",
                       "value": [
                         {
-                          "targetBlank": false,
-                          "title": "Показать все объекты",
-                          "url": "?var-selected_slug="
+                          "targetBlank": true,
+                          "title": "View Details",
+                          "url": "https://house.kg/details/${__value.raw}"
                         }
                       ]
                     }
@@ -2259,6 +2259,111 @@
           "version": "13.1.2"
         }
       }
+    },
+    "panel-12": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "afgo4scn4wu0wa"
+                    },
+                    "group": "grafana-athena-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                      },
+                      "format": 1,
+                      "rawSQL": "SELECT 'Показать все объекты' AS reset\n",
+                      "table": "commercial_price_fact"
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "Сбрасывает выбор объекта и возвращает карту к полному виду по текущим фильтрам",
+        "id": 12,
+        "links": [],
+        "title": "",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "blue",
+                      "value": 0
+                    }
+                  ]
+                },
+                "unit": "none"
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "reset"
+                  },
+                  "properties": [
+                    {
+                      "id": "links",
+                      "value": [
+                        {
+                          "targetBlank": false,
+                          "title": "Показать все объекты",
+                          "url": "?${district:queryparam}&${commercial_type:queryparam}&${square_min:queryparam}&${square_max:queryparam}&${land_square_min:queryparam}&${land_square_max:queryparam}&${floor_min:queryparam}&${floor_max:queryparam}&${floors_min:queryparam}&${floors_max:queryparam}&${year_min:queryparam}&${year_max:queryparam}&${sqm_price_min:queryparam}&${sqm_price_max:queryparam}&var-selected_slug="
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "colorMode": "background",
+              "graphMode": "none",
+              "justifyMode": "center",
+              "orientation": "auto",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "textMode": "value",
+              "wideLayout": true
+            }
+          },
+          "version": "13.1.2"
+        }
+      }
     }
   },
   "layout": {
@@ -2288,6 +2393,15 @@
                       "element": {
                         "kind": "ElementReference",
                         "name": "panel-11"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "AutoGridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-12"
                       }
                     }
                   }
