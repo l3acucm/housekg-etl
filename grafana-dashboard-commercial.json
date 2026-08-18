@@ -2418,20 +2418,7 @@
       ]
     }
   },
-  "links": [
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": false,
-      "keepTime": false,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Показать все объекты",
-      "tooltip": "",
-      "type": "link",
-      "url": "/d/housekg-commercial/commercial?var-selected_slug=&dtab=Map"
-    }
-  ],
+  "links": [],
   "liveNow": false,
   "preload": false,
   "tags": [],
