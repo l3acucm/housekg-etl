@@ -192,7 +192,7 @@
                         "resultReuseMaxAgeInMinutes": 60
                       },
                       "format": 1,
-                      "rawSQL": "WITH current AS (\n    SELECT\n        r.micro_district,\n        r.commercial_type,\n        r.slug AS slug,\n        r.square,\n        r.land_square,\n        r.latitude,\n        r.longitude,\n        f.sqm_price * r.square AS price,\n        ROUND(f.sqm_price) AS fact_sqm_price,\n        ROUND(f.expected_price) AS fact_expected_sqm_price,\n        ROUND(f.price_vs_expected_pct, 1) AS price_vs_expected_pct,\n        f.payback_months,\n        f.monthly_yield_pct,\n        f.est_monthly_rent\n    FROM commercial_price_fact f\n    JOIN commercial_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = true\n        AND r.micro_district IN (${district:csv})\n        AND r.commercial_type IN (${commercial_type:singlequote})\n        AND r.square BETWEEN ${square_min} AND ${square_max}\n        AND (r.land_square IS NULL OR r.land_square BETWEEN ${land_square_min} AND ${land_square_max})\n        AND (r.floor IS NULL OR r.floor BETWEEN ${floor_min} AND ${floor_max})\n        AND (r.floors IS NULL OR r.floors BETWEEN ${floors_min} AND ${floors_max})\n        AND (r.year IS NULL OR r.year BETWEEN ${year_min} AND ${year_max})\n        AND f.sqm_price BETWEEN ${sqm_price_min} AND ${sqm_price_max}\n)\nSELECT\n    c.latitude,\n    c.longitude,\n    c.slug,\n    c.micro_district,\n    c.commercial_type,\n    c.square,\n    c.fact_sqm_price,\n    c.fact_expected_sqm_price,\n    c.price_vs_expected_pct,\n    c.price,\n    c.payback_months,\n    c.monthly_yield_pct,\n    c.est_monthly_rent\nFROM current c\nWHERE (${selected_slug} = '' OR c.slug = '${selected_slug}')\nORDER BY price_vs_expected_pct ASC;\n",
+                      "rawSQL": "WITH current AS (\n    SELECT\n        r.micro_district,\n        r.commercial_type,\n        r.slug AS slug,\n        r.square,\n        r.land_square,\n        r.latitude,\n        r.longitude,\n        f.sqm_price * r.square AS price,\n        ROUND(f.sqm_price) AS fact_sqm_price,\n        ROUND(f.expected_price) AS fact_expected_sqm_price,\n        ROUND(f.price_vs_expected_pct, 1) AS price_vs_expected_pct,\n        f.payback_months,\n        f.monthly_yield_pct,\n        f.est_monthly_rent\n    FROM commercial_price_fact f\n    JOIN commercial_dim r\n        ON f.slug = r.slug\n    WHERE f.is_current = true\n        AND r.micro_district IN (${district:csv})\n        AND r.commercial_type IN (${commercial_type:singlequote})\n        AND r.square BETWEEN ${square_min} AND ${square_max}\n        AND (r.land_square IS NULL OR r.land_square BETWEEN ${land_square_min} AND ${land_square_max})\n        AND (r.floor IS NULL OR r.floor BETWEEN ${floor_min} AND ${floor_max})\n        AND (r.floors IS NULL OR r.floors BETWEEN ${floors_min} AND ${floors_max})\n        AND (r.year IS NULL OR r.year BETWEEN ${year_min} AND ${year_max})\n        AND f.sqm_price BETWEEN ${sqm_price_min} AND ${sqm_price_max}\n)\nSELECT\n    c.latitude,\n    c.longitude,\n    c.slug,\n    c.micro_district,\n    c.commercial_type,\n    c.square,\n    c.fact_sqm_price,\n    c.fact_expected_sqm_price,\n    c.price_vs_expected_pct,\n    c.price,\n    c.payback_months,\n    c.monthly_yield_pct,\n    c.est_monthly_rent\nFROM current c\nWHERE ('${selected_slug}' = '' OR c.slug = '${selected_slug}')\nORDER BY price_vs_expected_pct ASC;\n",
                       "table": "commercial_price_fact"
                     },
                     "version": "v0"
@@ -2326,19 +2326,6 @@
                       "x": 0,
                       "y": 18
                     }
-                  },
-                  {
-                    "kind": "GridLayoutItem",
-                    "spec": {
-                      "element": {
-                        "kind": "ElementReference",
-                        "name": "panel-11"
-                      },
-                      "height": 5,
-                      "width": 12,
-                      "x": 12,
-                      "y": 18
-                    }
                   }
                 ]
               }
@@ -2385,6 +2372,15 @@
                       "element": {
                         "kind": "ElementReference",
                         "name": "panel-10"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "AutoGridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-11"
                       }
                     }
                   }

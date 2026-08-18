@@ -498,7 +498,16 @@ def main():
     scored_df = add_expected_price(cleaned_df_bronze, price_col="sqm_price")
     scored_df = adjust_expected_price_for_flag(scored_df, price_col="sqm_price", flag_col="is_basement")
 
-    rent_df = get_bronze_rent_df()
+    try:
+        rent_df = get_bronze_rent_df()
+    except Exception as e:
+        logger.warn(f"No commercial rent bronze data ({e}); yield columns will be null")
+        rent_df = spark.createDataFrame([], T.StructType([
+            T.StructField("slug", T.StringType()),
+            T.StructField("latitude", T.DoubleType()),
+            T.StructField("longitude", T.DoubleType()),
+            T.StructField("sqm_price", T.DoubleType()),
+        ]))
     scored_df = nearest_cross_comps(scored_df, rent_df, price_col="sqm_price", k=3)
     scored_df = (
         scored_df

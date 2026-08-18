@@ -7,6 +7,7 @@ package-lock.json
 .DS_Store
 iac/terraform.tfvars
 iac/artifacts
+iac/tfplan
 iac/.terraform/providers/registry.terraform.io/hashicorp/aws
 etl/venvs/
 etl/jobs/lambda/ingestion/layer/python/

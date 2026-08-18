@@ -13,25 +13,29 @@ Step Function: data-processing-workflow   (Parallel: apartments | plots | commer
         ▼  per branch:
 1. Lambda ingestion        → writes raw JSON to s3://<bucket>/ingestions_(apartments|plots|commercial)/<prefix>-DDMMYYYY.json
 2. Glue Crawler             → catalogs the day's JSON into Glue table  (apartments|plots|commercial)_DDMMYYYY_json
-3. Glue Job (Spark)        → reads bronze table, cleans/derives, writes silver parquet, POSTs new-listing webhook
+   (commercial branch only) → sequential step: ingest commercial rent listings + crawl their bronze table, before the Glue job
+3. Glue Job (Spark)        → reads bronze table(s), cleans/derives, writes silver parquet, POSTs new-listing webhook
 4. Final crawlers (×3)     → catalog silver outputs into Glue
         │
         ▼
 Athena workgroup `housekg_workgroup` queries silver tables; Grafana dashboards consume Athena.
 ```
 
+The commercial branch's rent step is sequential, not a 4th parallel branch — added as another step inside the existing branch rather than a new top-level `Parallel` branch, specifically to avoid growing the surface of the no-`Catch` `Parallel` issue documented under Operational gotchas below.
+
 State backend: S3 bucket `realty-etl-terraform-backend`, DynamoDB lock table `realty-etl-state-lock`, region `eu-central-1`. Data bucket: `housekg-etl-data`.
 
 ## Bounding box
 
-All three lambdas now query the **same bbox** (`lat1=42.529879066020332, lon1=74.01283264160158, lat2=43.096546175778314, lon2=75.08399963378908`) — same center as the original apartments-only bbox, 3× its width and height. Apartment/commercial listing density falls off fast outside Bishkek, so this didn't meaningfully change apartments/commercial payload size; plots' bbox shrank a lot (from the whole Chui region) but plot density near the unified zone kept its payload in the same ballpark. If the bbox ever needs to change again, keep all three lambdas in sync — the whole point of unifying them was so a single zone covers all three object types.
+All four lambdas now query the **same bbox** (`lat1=42.529879066020332, lon1=74.01283264160158, lat2=43.096546175778314, lon2=75.08399963378908`) — same center as the original apartments-only bbox, 3× its width and height. Apartment/commercial listing density falls off fast outside Bishkek, so this didn't meaningfully change apartments/commercial payload size; plots' bbox shrank a lot (from the whole Chui region) but plot density near the unified zone kept its payload in the same ballpark. If the bbox ever needs to change again, keep all four lambdas in sync — the whole point of unifying them was so a single zone covers all three object types (plus the commercial rent variant).
 
 ## Repo layout
 
 - `etl/jobs/lambda/ingestion/main.py` — apartments ingestion (`category=1`, `document=[4]` sale)
 - `etl/jobs/lambda/plots_ingestion/main.py` — plots ingestion (`category=5` land, `document in [1,2,6,7,8]`)
 - `etl/jobs/lambda/commercial_ingestion/main.py` — commercial ingestion (`category=3`, `type_id=[1]` sale — see note below on why this isn't `document`)
-- `etl/jobs/lambda/ingestion/layer/python/` — packaged `requests` Lambda layer (shared by all three lambdas)
+- `etl/jobs/lambda/commercial_rent_ingestion/main.py` — commercial rent ingestion (`category=3`, `type_id=[2]` rental — same bbox as the others)
+- `etl/jobs/lambda/ingestion/layer/python/` — packaged `requests` Lambda layer (shared by all four lambdas)
 - `etl/jobs/glue/feature_engineering.py` — apartments Spark job
 - `etl/jobs/glue/plots_feature_engineering.py` — plots Spark job
 - `etl/jobs/glue/commercial_feature_engineering.py` — commercial Spark job
@@ -72,7 +76,7 @@ All three jobs share a hand-rolled SCD2 helper (`update_scd2_table`) and emit th
   - `silver/plots_market_summary` — SCD2 keyed by `(slug, purpose)`
 - Commercial (`commercial_feature_engineering.py`):
   - `silver/commercial_dim` — snapshot, includes `square`, `land_square`, `commercial_type` label
-  - `silver/commercial_price_fact` — SCD2 over `sqm_price` (same per-m² model as apartments) keyed by `slug`
+  - `silver/commercial_price_fact` — SCD2 over `sqm_price` (same per-m² model as apartments) keyed by `slug`; also carries `est_monthly_rent`, `payback_months`, `monthly_yield_pct`, and `comp{1,2,3}_slug/lat/lon/rent_sqm_price` (3 nearest rental comps used to estimate yield) — SCD2-tracked like everything else in this table (see Expected-price model section)
   - `silver/commercial_market_summary` — SCD2 keyed by `(slug, commercial_type)`, same district/market-wide pattern as plots' `purpose` split
 
 SCD2 quirks: the helper computes a `<field>_change` % column for each `DoubleType` compared field; new/changed rows get current timestamps for `effective_from`, closed rows get `effective_to=now`, `is_current=false`. The helper requires that no current row matches a comparison row by key but with equal values — those become "unchanged".
@@ -91,6 +95,8 @@ Adds two columns tracked in `*_price_fact` (SCD2, alongside the existing price f
 Falls back to null columns (skips) below `min_rows=30` rows in a batch — guards early/sparse crawls, not meant to error the job. Not wired into the webhook filter (`notify`) — that still uses its original fixed thresholds; this is a separate, broader "underpriced vs model" signal, added as extra columns on the existing `Underestimated` Grafana panel per dashboard (not a separate panel — merged in to avoid duplicating the same district/rooms/floor filter UI twice), plus a `Underpriced by model (map)` Geomap panel colored by `price_vs_expected_pct`.
 
 Like `anomaly_correction`/`notify`, `price_model.py` must be in `--extra-py-files` *and* uploaded via `aws_s3_object` (`price_model_module` in `s3.tf`) for every job that imports it (all three) — same `ModuleNotFoundError` failure mode noted above if either is missed.
+
+`price_model.py` also has `nearest_cross_comps`, a cross-dataset variant of the same geographic kNN idea: instead of self-joining a dataset against itself, it finds each commercial *sale* listing's 3 nearest *rental* comps (a different dataset) to estimate rental yield/payback for `commercial_price_fact` (see Silver model above). Confirmed against real production data: a rental listing's `prices[1].m2_price` field means rent per m² per month — this was an open risk during design, now settled.
 
 **Schema propagation gotcha (bit us once already):** adding columns to a job's output isn't enough — the Glue Catalog table schema Athena/Grafana actually query is defined by the `*_price_fact` **crawler**, not the job. After a code change adds/renames a `price_fact` column: (1) `terraform apply` to push the script, (2) run the job (`aws glue start-job-run`) so the parquet on S3 actually has the new column, (3) run the `*_price_fact` crawler (`aws glue start-crawler`) so the Catalog schema merges it in (`AddOrUpdateBehavior = "MergeNewColumns"`). Skipping step 3 gives `column ... cannot be resolved` in Grafana/Athena even though the job succeeded.
 
