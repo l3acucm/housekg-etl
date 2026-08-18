@@ -312,7 +312,8 @@
               "basemap": {
                 "config": {},
                 "name": "Basemap",
-                "type": "default"
+                "noRepeat": false,
+                "type": "osm-standard"
               },
               "controls": {
                 "mouseWheelZoom": true,
@@ -393,6 +394,112 @@
                 "noRepeat": false,
                 "zoom": 11
               }
+            }
+          },
+          "version": "13.1.2"
+        }
+      }
+    },
+    "panel-11": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "afgo4scn4wu0wa"
+                    },
+                    "group": "grafana-athena-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                      },
+                      "format": 1,
+                      "rawSQL": "SELECT\n  ROUND(payback_months, 1) AS \"Payback (months)\",\n  ROUND((SELECT avg(x) FROM UNNEST(ARRAY[comp1_rent_sqm_price, comp2_rent_sqm_price, comp3_rent_sqm_price]) AS t(x)), 2) AS \"Rent (USD/m2)\",\n  ROUND(est_monthly_rent) AS \"Est. monthly rent (USD)\"\nFROM commercial_price_fact\nWHERE is_current = true AND slug = '${selected_slug}';\n",
+                      "table": "commercial_price_fact"
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "Payback/yield for the selected object, estimated from its 3 nearest rental comps",
+        "id": 11,
+        "links": [],
+        "title": "Доходность",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": 0
+                    }
+                  ]
+                },
+                "unit": "none"
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Payback (months)"
+                  },
+                  "properties": [
+                    {
+                      "id": "links",
+                      "value": [
+                        {
+                          "targetBlank": false,
+                          "title": "Показать все объекты",
+                          "url": "?var-selected_slug="
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "auto",
+              "orientation": "auto",
+              "percentChangeColorMode": "standard",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "showPercentChange": false,
+              "textMode": "auto",
+              "wideLayout": true
             }
           },
           "version": "13.1.2"
@@ -2147,90 +2254,6 @@
                 "mode": "single",
                 "sort": "none"
               }
-            }
-          },
-          "version": "13.1.2"
-        }
-      }
-    },
-    "panel-11": {
-      "kind": "Panel",
-      "spec": {
-        "data": {
-          "kind": "QueryGroup",
-          "spec": {
-            "queries": [
-              {
-                "kind": "PanelQuery",
-                "spec": {
-                  "hidden": false,
-                  "query": {
-                    "datasource": {
-                      "name": "afgo4scn4wu0wa"
-                    },
-                    "group": "grafana-athena-datasource",
-                    "kind": "DataQuery",
-                    "spec": {
-                      "connectionArgs": {
-                        "catalog": "__default",
-                        "database": "__default",
-                        "region": "__default",
-                        "resultReuseEnabled": false,
-                        "resultReuseMaxAgeInMinutes": 60
-                      },
-                      "format": 1,
-                      "rawSQL": "SELECT ROUND(payback_months, 1) AS \"Payback (months)\", ROUND(monthly_yield_pct, 2) AS \"Monthly yield (%)\", ROUND(est_monthly_rent) AS \"Est. monthly rent (USD)\" FROM commercial_price_fact WHERE is_current = true AND slug = '${selected_slug}';\n",
-                      "table": "commercial_price_fact"
-                    },
-                    "version": "v0"
-                  },
-                  "refId": "A"
-                }
-              }
-            ],
-            "queryOptions": {},
-            "transformations": []
-          }
-        },
-        "description": "Payback/yield for the selected object, estimated from its 3 nearest rental comps",
-        "id": 11,
-        "links": [],
-        "title": "Доходность",
-        "vizConfig": {
-          "group": "stat",
-          "kind": "VizConfig",
-          "spec": {
-            "fieldConfig": {
-              "defaults": {
-                "color": {
-                  "mode": "thresholds"
-                },
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "text",
-                      "value": 0
-                    }
-                  ]
-                },
-                "unit": "none"
-              },
-              "overrides": []
-            },
-            "options": {
-              "colorMode": "value",
-              "graphMode": "none",
-              "justifyMode": "auto",
-              "orientation": "auto",
-              "reduceOptions": {
-                "calcs": [
-                  "lastNotNull"
-                ],
-                "fields": "",
-                "values": false
-              },
-              "textMode": "auto"
             }
           },
           "version": "13.1.2"
