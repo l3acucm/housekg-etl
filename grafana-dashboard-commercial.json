@@ -2406,7 +2406,7 @@
       "title": "Показать все объекты",
       "tooltip": "",
       "type": "link",
-      "url": "?var-selected_slug="
+      "url": "/d/housekg-commercial/commercial?var-selected_slug=&dtab=Map"
     }
   ],
   "liveNow": false,
