@@ -20,7 +20,7 @@ from anomaly_correction import (
     BASEMENT_QUESTION_KEY,
 )
 from notify import find_new_rows, send_webhook
-from price_model import add_expected_price, adjust_expected_price_for_flag
+from price_model import add_expected_price, adjust_expected_price_for_flag, nearest_cross_comps
 
 glue_context = GlueContext(SparkContext())
 args = getResolvedOptions(sys.argv, ['BUCKET', 'MODEL_ID', 'BEDROCK_REGION', 'MAX_LLM_CALLS', 'WEBHOOK_URL'])
@@ -51,6 +51,7 @@ price_fact_s3_uri = f"s3://{bucket}/{silver_key}/{price_fact_table_name}"
 market_summary_s3_uri = f"s3://{bucket}/{silver_key}/{market_summary_table_name}"
 
 bronze_table_name = f"commercial_{timestamp_str}_json"
+bronze_rent_table_name = f"commercial_rent_{timestamp_str}_json"
 
 # id -> label from house.kg's "тип коммерческого помещения" dropdown (site UI order, 1-indexed)
 COMMERCIAL_TYPE_LABELS = {
@@ -122,6 +123,35 @@ def get_bronze_df():
         .filter(F.col("sqm_price") > 0)
         .filter(F.col("square") > 0)
         .filter(F.col("micro_district").isNotNull())
+    )
+
+
+def get_bronze_rent_df():
+    df_bronze = glue_context.create_dynamic_frame.from_catalog(
+        database=glue_database_name,
+        table_name=bronze_rent_table_name
+    ).toDF().select(F.explode(F.col("list")).alias("house")).select('house.*')
+
+    square_double = F.coalesce(
+        F.col("square.double"),
+        F.col("square.int").cast(T.DoubleType())
+    )
+
+    df_bronze = df_bronze.select(
+        F.col('slug'),
+        F.col('longitude'),
+        F.col('latitude'),
+        F.col('prices')[1]['m2_price'].cast(T.DoubleType()).alias('sqm_price'),
+        square_double.alias('square'),
+    )
+
+    return (
+        df_bronze
+        .dropDuplicates(["slug"])
+        .filter(F.col("sqm_price") > 0)
+        .filter(F.col("square") > 0)
+        .filter(F.col("latitude").isNotNull())
+        .filter(F.col("longitude").isNotNull())
     )
 
 
@@ -450,6 +480,13 @@ def create_commercial_market_summary_table(cleaned_df_bronze):
     )
 
 
+_RENT_COMP_COLUMNS = [
+    f"comp{i}_{field}"
+    for i in (1, 2, 3)
+    for field in ("slug", "lat", "lon", "rent_sqm_price")
+] + ["avg_rent_sqm_price", "est_monthly_rent", "payback_months", "monthly_yield_pct"]
+
+
 def main():
     bronze_df = get_bronze_df().alias("incoming")
     bronze_df.cache()
@@ -460,9 +497,35 @@ def main():
 
     scored_df = add_expected_price(cleaned_df_bronze, price_col="sqm_price")
     scored_df = adjust_expected_price_for_flag(scored_df, price_col="sqm_price", flag_col="is_basement")
+
+    rent_df = get_bronze_rent_df()
+    scored_df = nearest_cross_comps(scored_df, rent_df, price_col="sqm_price", k=3)
+    scored_df = (
+        scored_df
+        .withColumn(
+            "est_monthly_rent",
+            F.when(F.col("avg_rent_sqm_price").isNotNull(), F.col("avg_rent_sqm_price") * F.col("square")),
+        )
+        .withColumn(
+            "payback_months",
+            F.when(
+                F.col("est_monthly_rent").isNotNull() & (F.col("est_monthly_rent") > 0),
+                (F.col("sqm_price") * F.col("square")) / F.col("est_monthly_rent"),
+            ),
+        )
+        .withColumn(
+            "monthly_yield_pct",
+            F.when(
+                F.col("est_monthly_rent").isNotNull() & (F.col("square") > 0),
+                F.col("est_monthly_rent") / (F.col("sqm_price") * F.col("square")) * 100.0,
+            ),
+        )
+    )
     scored_df.cache()
 
-    commercial_dim_df = scored_df.drop("sqm_price", "expected_price", "price_vs_expected_pct")
+    commercial_dim_df = scored_df.drop(
+        "sqm_price", "expected_price", "price_vs_expected_pct", *_RENT_COMP_COLUMNS
+    )
     commercial_dim_df.write.mode("overwrite").parquet(commercial_dim_table_s3_uri)
 
     new_rows = find_new_rows(spark, price_fact_s3_uri, cleaned_df_bronze.select("slug", "square", "sqm_price"))
@@ -481,9 +544,29 @@ def main():
             T.StructField("sqm_price", T.DoubleType(), False),
             T.StructField("expected_price", T.DoubleType(), True),
             T.StructField("price_vs_expected_pct", T.DoubleType(), True),
+            T.StructField("est_monthly_rent", T.DoubleType(), True),
+            T.StructField("payback_months", T.DoubleType(), True),
+            T.StructField("monthly_yield_pct", T.DoubleType(), True),
+            T.StructField("comp1_slug", T.StringType(), True),
+            T.StructField("comp1_lat", T.DoubleType(), True),
+            T.StructField("comp1_lon", T.DoubleType(), True),
+            T.StructField("comp1_rent_sqm_price", T.DoubleType(), True),
+            T.StructField("comp2_slug", T.StringType(), True),
+            T.StructField("comp2_lat", T.DoubleType(), True),
+            T.StructField("comp2_lon", T.DoubleType(), True),
+            T.StructField("comp2_rent_sqm_price", T.DoubleType(), True),
+            T.StructField("comp3_slug", T.StringType(), True),
+            T.StructField("comp3_lat", T.DoubleType(), True),
+            T.StructField("comp3_lon", T.DoubleType(), True),
+            T.StructField("comp3_rent_sqm_price", T.DoubleType(), True),
         ],
         comparison_df=scored_df.select(
-            "slug", "sqm_price", "expected_price", "price_vs_expected_pct", F.col("updated_at").alias("timestamp")
+            "slug", "sqm_price", "expected_price", "price_vs_expected_pct",
+            "est_monthly_rent", "payback_months", "monthly_yield_pct",
+            "comp1_slug", "comp1_lat", "comp1_lon", "comp1_rent_sqm_price",
+            "comp2_slug", "comp2_lat", "comp2_lon", "comp2_rent_sqm_price",
+            "comp3_slug", "comp3_lat", "comp3_lon", "comp3_rent_sqm_price",
+            F.col("updated_at").alias("timestamp")
         ),
         partition_col="is_current"
     )
