@@ -162,7 +162,7 @@
               }
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -396,7 +396,7 @@
               }
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -502,7 +502,7 @@
               "wideLayout": true
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -644,7 +644,7 @@
               }
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -785,7 +785,7 @@
               }
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -928,7 +928,7 @@
               }
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -1070,7 +1070,7 @@
               }
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -2153,7 +2153,7 @@
               ]
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -2256,7 +2256,7 @@
               }
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     },
@@ -2346,7 +2346,7 @@
               ]
             },
             "options": {
-              "colorMode": "background",
+              "colorMode": "value",
               "graphMode": "none",
               "justifyMode": "center",
               "orientation": "auto",
@@ -2361,7 +2361,7 @@
               "wideLayout": true
             }
           },
-          "version": "13.1.2"
+          "version": "13.2.0"
         }
       }
     }
