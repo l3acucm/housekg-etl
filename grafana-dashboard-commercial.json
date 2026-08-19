@@ -479,6 +479,20 @@
                           "url": "https://house.kg/details/${__value.raw}"
                         }
                       ]
+                    },
+                    {
+                      "id": "mappings",
+                      "value": [
+                        {
+                          "type": "regex",
+                          "options": {
+                            "pattern": ".*",
+                            "result": {
+                              "text": "🔗"
+                            }
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -2336,7 +2350,7 @@
                         {
                           "targetBlank": false,
                           "title": "Показать все объекты",
-                          "url": "?${district:queryparam}&${commercial_type:queryparam}&${square_min:queryparam}&${square_max:queryparam}&${land_square_min:queryparam}&${land_square_max:queryparam}&${floor_min:queryparam}&${floor_max:queryparam}&${floors_min:queryparam}&${floors_max:queryparam}&${year_min:queryparam}&${year_max:queryparam}&${sqm_price_min:queryparam}&${sqm_price_max:queryparam}"
+                          "url": "/d/housekg-commercial/commercial?${district:queryparam}&${commercial_type:queryparam}&${square_min:queryparam}&${square_max:queryparam}&${land_square_min:queryparam}&${land_square_max:queryparam}&${floor_min:queryparam}&${floor_max:queryparam}&${floors_min:queryparam}&${floors_max:queryparam}&${year_min:queryparam}&${year_max:queryparam}&${sqm_price_min:queryparam}&${sqm_price_max:queryparam}&dtab=Map"
                         }
                       ]
                     }
