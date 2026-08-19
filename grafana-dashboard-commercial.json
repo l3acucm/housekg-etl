@@ -371,7 +371,7 @@
                     }
                   },
                   "filterData": {
-                    "id": "byFrameRefID",
+                    "id": "byRefId",
                     "options": "B"
                   },
                   "location": {
