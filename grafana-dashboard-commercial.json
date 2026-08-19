@@ -2310,15 +2310,14 @@
             "fieldConfig": {
               "defaults": {
                 "color": {
-                  "mode": "fixed",
-                  "fixedColor": "blue"
+                  "mode": "thresholds"
                 },
                 "thresholds": {
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "blue",
-                      "value": 0
+                      "value": 0,
+                      "color": "text"
                     }
                   ]
                 },
@@ -2357,7 +2356,7 @@
                 "fields": "",
                 "values": false
               },
-              "textMode": "value",
+              "textMode": "auto",
               "wideLayout": true
             }
           },
