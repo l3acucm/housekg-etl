@@ -85,10 +85,20 @@ def get_bronze_df():
         F.col("land_square.double"),
         F.col("land_square.int").cast(T.DoubleType())
     )
-    price_usd_double = F.coalesce(
-        F.col("prices")[1]["price"]["double"].cast(T.DoubleType()),
-        F.col("prices")[1]["price"]["int"].cast(T.DoubleType()),
-    )
+    # prices[1].price is usually a {int, double} struct, but the crawler infers a
+    # plain scalar on any day where every listing's price happens to be a whole
+    # number (no float ever observed) -- same ambiguity as square/land_square
+    # above, just less consistently triggered. Unlike those, assuming struct here
+    # unconditionally crashes the whole job (INVALID_EXTRACT_BASE_FIELD_TYPE) on
+    # scalar days, so branch on the actual inferred schema instead of assuming.
+    price_field_type = df_bronze.schema["prices"].dataType.elementType["price"].dataType
+    if isinstance(price_field_type, T.StructType):
+        price_usd_double = F.coalesce(
+            F.col("prices")[1]["price"]["double"].cast(T.DoubleType()),
+            F.col("prices")[1]["price"]["int"].cast(T.DoubleType()),
+        )
+    else:
+        price_usd_double = F.col("prices")[1]["price"].cast(T.DoubleType())
 
     type_label = F.coalesce(
         F.create_map([F.lit(x) for pair in COMMERCIAL_TYPE_LABELS.items() for x in pair])[
